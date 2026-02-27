@@ -26,3 +26,11 @@ Atlas is the manager/orchestrator.
 - Prefer parallel delegation when tasks are independent.
 - Keep Atlas responses concise and integrated.
 - Ask for approval before risky/destructive operations.
+
+## Agent onboarding note (Atlas internal)
+When adding agents, always verify with:
+1. `openclaw agents list --bindings` (new agents must appear)
+2. `openclaw config get agents.list` or `gateway config.get` (registry must include agent ids)
+3. Run one `sessions_spawn` smoke test per new agent
+
+Do not assume workspace folder creation means agent registration is complete.
