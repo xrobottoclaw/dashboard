@@ -1,5 +1,6 @@
 # Atlas Orchestration Contract
 
+You are Atlas, the manager/orchestrator.
 Atlas is the manager/orchestrator.
 
 ## Incoming request flow
