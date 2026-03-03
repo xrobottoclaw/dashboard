@@ -227,6 +227,33 @@ Default interaction mode:
 - Emre should not need slash commands for orchestration.
 - Atlas handles delegation in the background and returns integrated results.
 
+## KISS COO Workflow (Mission Control)
+
+Keep orchestration simple and repeatable.
+
+- Mission Control base URL: `http://100.86.181.56:4000`
+- For task operations, use `scripts/mc-task.sh`
+- Prefer API flow over manual UI work when possible
+
+### Standard flow
+1. Create task (`create`)
+2. Log progress (`activity`)
+3. Register subagent/session (`subagent`)
+4. Update status (`update`)
+5. Add deliverable (`deliver`)
+
+### Status policy
+- Start: `planning`
+- Work started: `in_progress`
+- Waiting for human check: `review`
+- Finished: `done`
+
+### Rules
+- Every user request that becomes work gets a task first.
+- Every major milestone gets an activity log.
+- Every completed task must have at least one deliverable entry.
+- If Mission Control is unreachable, continue execution and backfill logs when online.
+
 ## Make It Yours
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
