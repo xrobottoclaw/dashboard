@@ -45,13 +45,14 @@ case "$cmd" in
   activity)
     task_id="${1:?task_id required}"
     message="${2:?message required}"
-    api POST "/api/tasks/$task_id/activities" "{\"message\":\"$message\",\"type\":\"progress\"}"
+    activity_type="${3:-updated}"
+    api POST "/api/tasks/$task_id/activities" "{\"message\":\"$message\",\"activity_type\":\"$activity_type\"}"
     ;;
   subagent)
     task_id="${1:?task_id required}"
-    agent_id="${2:?agent_id required}"
-    session_id="${3:?session_id required}"
-    api POST "/api/tasks/$task_id/subagent" "{\"agent_id\":\"$agent_id\",\"session_id\":\"$session_id\"}"
+    agent_name="${2:?agent_name required}"
+    openclaw_session_id="${3:?openclaw_session_id required}"
+    api POST "/api/tasks/$task_id/subagent" "{\"agent_name\":\"$agent_name\",\"openclaw_session_id\":\"$openclaw_session_id\"}"
     ;;
   deliver)
     task_id="${1:?task_id required}"
