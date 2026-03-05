@@ -6,7 +6,7 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4001/api' });
+const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -42,7 +42,7 @@ function Tasks(){
 
 function Logs(){
   const [logs,setLogs]=useState([]); const [level,setLevel]=useState(''); const [keyword,setKeyword]=useState('');
-  useEffect(()=>{const ws=new WebSocket((import.meta.env.VITE_WS_URL||'ws://localhost:4001')+'/ws/logs'); ws.onmessage=e=>setLogs(s=>[...s.slice(-500),JSON.parse(e.data)]); return ()=>ws.close();},[]);
+  useEffect(()=>{const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/logs'); ws.onmessage=e=>setLogs(s=>[...s.slice(-500),JSON.parse(e.data)]); return ()=>ws.close();},[]);
   const filtered=useMemo(()=>logs.filter(l=>(!level||l.level===level)&&(!keyword||l.message.includes(keyword))),[logs,level,keyword]);
   return <div className='space-y-2'><div className='flex gap-2'><select className='bg-zinc-900 p-2 rounded' onChange={e=>setLevel(e.target.value)}><option value=''>all</option><option>INFO</option><option>WARN</option><option>ERROR</option><option>TOOL_CALL</option></select><input className='bg-zinc-900 p-2 rounded' placeholder='keyword' onChange={e=>setKeyword(e.target.value)}/></div><div className='card h-96 overflow-auto font-mono text-sm'>{filtered.map((l,i)=><div key={i} className={colors[l.level]}>{new Date(l.ts).toLocaleTimeString()} {l.message}</div>)}</div></div>;
 }
@@ -54,7 +54,7 @@ function Files(){
 }
 
 function Term(){
-  const el=useRef(null); useEffect(()=>{const term=new Terminal(); const fit=new FitAddon(); term.loadAddon(fit); term.open(el.current); fit.fit(); const ws=new WebSocket((import.meta.env.VITE_WS_URL||'ws://localhost:4001')+'/ws/terminal'); term.onData(d=>ws.send(d)); ws.onmessage=e=>term.write(e.data); return ()=>{ws.close();term.dispose();};},[]);
+  const el=useRef(null); useEffect(()=>{const term=new Terminal(); const fit=new FitAddon(); term.loadAddon(fit); term.open(el.current); fit.fit(); const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/terminal'); term.onData(d=>ws.send(d)); ws.onmessage=e=>term.write(e.data); return ()=>{ws.close();term.dispose();};},[]);
   return <div ref={el} className='card h-[500px]'/>
 }
 

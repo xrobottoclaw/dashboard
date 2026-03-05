@@ -17,7 +17,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://localhost:4001/api
-      - VITE_WS_URL=ws://localhost:4001
+      - VITE_API_URL=/api
+      - BACKEND_PROXY_TARGET=http://backend:4001
+      - BACKEND_PROXY_WS_TARGET=ws://backend:4001
     depends_on:
       - backend

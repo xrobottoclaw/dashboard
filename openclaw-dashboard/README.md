@@ -55,5 +55,11 @@ npm run dev
 5. ✅ Terminal
 6. ✅ Settings & Analytics
 
+## Secure Context Notu (Önemli)
+OpenClaw Control UI ve bazı websocket akışları tarayıcıda **secure context** ister.
+- `http://<ip>:port` ile açıldığında `disconnected (1008): requires HTTPS or localhost` alabilirsiniz.
+- Üretimde `https://domain` üzerinden açın (örn. Traefik + TLS).
+- Frontend varsayılan olarak `/api` ve `wss/ws` için mevcut origin'i kullanacak şekilde ayarlandı.
+
 ## Not
 Bu sürüm üretim başlangıç iskeletidir. OpenClaw REST/WS endpointleri farklıysa `backend/src/routes/*` içinde gerçek proxy entegrasyonu yapılmalıdır.
