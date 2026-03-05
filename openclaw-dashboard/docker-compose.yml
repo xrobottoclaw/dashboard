@@ -1,0 +1,23 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "4001:4001"
+    environment:
+      - PORT=4001
+      - DASHBOARD_USERNAME=admin
+      - DASHBOARD_PASSWORD=admin123
+      - JWT_SECRET=super-secret
+      - WORKSPACE_ROOT=/workspace
+    volumes:
+      - ../:/workspace
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:4001/api
+      - VITE_WS_URL=ws://localhost:4001
+    depends_on:
+      - backend
