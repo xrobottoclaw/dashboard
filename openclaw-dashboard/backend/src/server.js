@@ -9,6 +9,7 @@ import { tasksRouter } from './routes/tasks.js';
 import { filesRouter } from './routes/files.js';
 import { settingsRouter } from './routes/settings.js';
 import { analyticsRouter } from './routes/analytics.js';
+import { openclawProxyRouter } from './routes/openclawProxy.js';
 import { setupLogWebSocket } from './websocket/logs.js';
 import { setupTerminalWebSocket } from './websocket/terminal.js';
 
@@ -26,6 +27,7 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/openclaw', openclawProxyRouter);
 
 setupLogWebSocket(server);
 setupTerminalWebSocket(server);

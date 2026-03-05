@@ -46,6 +46,12 @@ npm run dev
 - `JWT_SECRET`
 - `JWT_EXPIRES`
 - `WORKSPACE_ROOT`
+- `OPENCLAW_BASE_URL` (örn: `https://robotto.duckdns.org:8080`)
+- `OPENCLAW_GATEWAY_TOKEN`
+
+## OpenClaw Proxy
+Dashboard backend, upstream OpenClaw'a şu route ile proxy geçer:
+- `/api/openclaw/*` -> `${OPENCLAW_BASE_URL}/*` (Authorization: Bearer `OPENCLAW_GATEWAY_TOKEN`)
 
 ## Modül Durumu / Öncelik
 1. ✅ Backend API iskelet + Auth
