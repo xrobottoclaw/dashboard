@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = process.env.OPENCLAW_BASE_URL || 'https://robotto.duckdns.org:8080';
+const baseURL = process.env.OPENCLAW_BASE_URL || 'http://127.0.0.1:18789';
 const token = process.env.OPENCLAW_GATEWAY_TOKEN || '';
 
 export const oc = axios.create({
