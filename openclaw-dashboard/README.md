@@ -22,21 +22,41 @@ docker compose up --build
 - Backend health: http://localhost:4001/health
 
 ## Tailscale Üzerinden Erişim (Public Kapalı)
-Frontend'i sadece Tailscale IP'den yayınlamak için:
+Bu proje OpenClaw container'ı içinde de çalıştırılabilir.
 
+### A) Docker ile (host'ta docker varsa)
 ```bash
 cd openclaw-dashboard
 export DASHBOARD_BIND_IP=100.90.28.62
 docker compose up -d --build
 ```
 
+### B) Container içinde (docker yoksa)
+```bash
+cd /data/workspace/openclaw-dashboard/backend
+cp .env.example .env
+# .env içine token ekle:
+# OPENCLAW_GATEWAY_TOKEN=...
+npm install
+HOST=0.0.0.0 PORT=4001 node src/server.js
+```
+
+Yeni terminal:
+```bash
+cd /data/workspace/openclaw-dashboard/frontend
+npm install
+BACKEND_PROXY_TARGET=http://127.0.0.1:4001 \
+BACKEND_PROXY_WS_TARGET=ws://127.0.0.1:4001 \
+npm run dev -- --host 0.0.0.0 --port 5173
+```
+
 Sonra Tailscale içinden aç:
 - `http://100.90.28.62:5173`
+- veya `http://claw.taila2b846.ts.net:5173`
 
 Notlar:
-- `backend` varsayılan olarak sadece localhost'ta açılır (`127.0.0.1:4001`).
-- `frontend`, backend'e içeriden Docker network + `/api` proxy ile bağlanır.
-- `OPENCLAW_BASE_URL` için private endpoint kullanın (`http://127.0.0.1:18789` veya tailnet IP).
+- `OPENCLAW_BASE_URL` private kalmalı (`http://127.0.0.1:18789` veya tailnet IP).
+- `OPENCLAW_GATEWAY_TOKEN` sadece `.env` içinde tutulmalı, repoya yazılmamalı.
 
 Varsayılan giriş:
 - kullanıcı: `admin`
