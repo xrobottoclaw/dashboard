@@ -21,6 +21,23 @@ docker compose up --build
 - Frontend: http://localhost:5173
 - Backend health: http://localhost:4001/health
 
+## Tailscale Üzerinden Erişim (Public Kapalı)
+Frontend'i sadece Tailscale IP'den yayınlamak için:
+
+```bash
+cd openclaw-dashboard
+export DASHBOARD_BIND_IP=100.90.28.62
+docker compose up -d --build
+```
+
+Sonra Tailscale içinden aç:
+- `http://100.90.28.62:5173`
+
+Notlar:
+- `backend` varsayılan olarak sadece localhost'ta açılır (`127.0.0.1:4001`).
+- `frontend`, backend'e içeriden Docker network + `/api` proxy ile bağlanır.
+- `OPENCLAW_BASE_URL` için private endpoint kullanın (`http://127.0.0.1:18789` veya tailnet IP).
+
 Varsayılan giriş:
 - kullanıcı: `admin`
 - şifre: `admin123`
