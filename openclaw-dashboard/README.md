@@ -5,9 +5,9 @@ Modern web dashboard (React + Vite + Tailwind + Express + WebSocket) tek repo i�
 ## Özellikler
 - JWT login (username/password `.env` tabanlı)
 - Overview: görev sayıları, uptime/version, CPU/RAM/Disk canlı grafik
-- Tasks: liste, filtre, yeni görev, iptal/yeniden başlat
-- Live Logs: WebSocket log akışı + level/keyword filtre
-- File Manager: workspace gezinme + içerik okuma/yazma/silme
+- Tasks: liste, filtre (status/tarih/arama), detay modal (log/tool/token), yeni görev, iptal/yeniden başlat
+- Live Logs: WebSocket log akışı + level/keyword filtre + TXT/JSON export
+- File Manager: workspace gezinme + içerik okuma/yazma + yeni dosya/klasör + rename + indirme + silme
 - Web Terminal: xterm.js + backend pty websocket
 - Settings: model/token/timeout benzeri ayarlar + restart endpoint
 - History/Analytics: günlük görev, tool kullanımı, token/cost özeti

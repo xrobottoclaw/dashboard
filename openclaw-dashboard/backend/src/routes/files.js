@@ -29,6 +29,21 @@ filesRouter.post('/write', async (req, res) => {
   catch (e) { res.status(400).json({ error: e.message }); }
 });
 
+filesRouter.post('/mkdir', async (req, res) => {
+  try { await fs.mkdir(safePath(req.body.path), { recursive: true }); res.json({ ok: true }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+filesRouter.post('/rename', async (req, res) => {
+  try { await fs.rename(safePath(req.body.oldPath), safePath(req.body.newPath)); res.json({ ok: true }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+filesRouter.get('/download', async (req, res) => {
+  try { return res.download(safePath(req.query.path)); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
 filesRouter.delete('/', async (req, res) => {
   try { await fs.rm(safePath(req.query.path), { recursive: true, force: true }); res.json({ ok: true }); }
   catch (e) { res.status(400).json({ error: e.message }); }

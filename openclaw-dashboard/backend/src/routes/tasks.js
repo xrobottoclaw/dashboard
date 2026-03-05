@@ -6,9 +6,11 @@ export const tasksRouter = Router();
 const byStatus = (arr, status) => status ? arr.filter(t => t.status === status) : arr;
 
 tasksRouter.get('/', (req, res) => {
-  const { status, q } = req.query;
+  const { status, q, from, to } = req.query;
   let out = byStatus(tasks, status);
   if (q) out = out.filter(t => `${t.id} ${t.actor} ${t.prompt}`.toLowerCase().includes(String(q).toLowerCase()));
+  if (from) out = out.filter(t => t.startedAt >= Number(from));
+  if (to) out = out.filter(t => t.startedAt <= Number(to));
   res.json(out.sort((a, b) => b.startedAt - a.startedAt));
 });
 
