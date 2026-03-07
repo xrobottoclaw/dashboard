@@ -65,5 +65,14 @@ Hem JWT hem `X-API-Key` ile çalışır (OpenClaw için API Key önerilir).
 - `GET /api/logs`, `GET /api/logs/export`
 - `WS /ws/logs`, `WS /ws/tasks`, `WS /ws/system`
 
+## GitHub SSH Init (restart sonrası)
+Container restart sonrası SSH key erişimi dalgalanırsa:
+
+```bash
+./scripts/init-github-ssh.sh
+```
+
+Not: Script `id_ed25519.pub` ve `known_hosts` dosyalarını garanti eder; private key (`/root/.ssh/id_ed25519`) yoksa güvenli şekilde tekrar yüklenmesi gerekir.
+
 ## Dashboard Skill
 OpenClaw için hazır skill şablonu: `dashboard-skill.md`
