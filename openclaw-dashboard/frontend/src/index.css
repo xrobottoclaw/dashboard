@@ -1,5 +1,0 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-.card{ @apply bg-zinc-900 border border-zinc-800 rounded-xl p-4; }
