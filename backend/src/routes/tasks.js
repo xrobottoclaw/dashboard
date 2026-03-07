@@ -31,7 +31,8 @@ tasksRouter.post('/', (req, res) => {
     logs: ['INFO Task created'],
     tools: [],
     tokens: 0,
-    subtasks: req.body.subtasks || []
+    subtasks: req.body.subtasks || [],
+    dependencies: req.body.dependencies || []
   };
   state.tasks.push(task);
   broadcast('tasks', { type: 'task.created', task });
