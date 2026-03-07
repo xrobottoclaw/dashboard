@@ -1,8 +1,14 @@
 export const logBuffer = [];
+let onPush = null;
+
+export function setLogPushHandler(fn) {
+  onPush = fn;
+}
 
 export function pushLog(entry) {
   logBuffer.push(entry);
   if (logBuffer.length > 5000) logBuffer.shift();
+  if (onPush) onPush(entry);
 }
 
 export function queryLogs({ level, keyword } = {}) {

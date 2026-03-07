@@ -1,4 +1,7 @@
-export const state = {
+import { loadState, saveState } from './persist.js';
+
+const loaded = loadState();
+export const state = loaded || {
   tasks: [],
   agents: [],
   skills: [],
@@ -15,4 +18,8 @@ export function broadcast(channel, payload) {
   for (const ws of wsChannels[channel] || []) {
     try { ws.send(JSON.stringify(payload)); } catch {}
   }
+}
+
+export function persistState() {
+  saveState(state);
 }

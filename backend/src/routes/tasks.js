@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { state, broadcast } from '../services/state.js';
+import { state, broadcast, persistState } from '../services/state.js';
+import { pushLog } from '../services/logStore.js';
 
 export const tasksRouter = Router();
 
@@ -35,6 +36,8 @@ tasksRouter.post('/', (req, res) => {
     dependencies: req.body.dependencies || []
   };
   state.tasks.push(task);
+  pushLog({ ts: Date.now(), level: 'INFO', message: `[TASK] created ${task.id}` });
+  persistState();
   broadcast('tasks', { type: 'task.created', task });
   res.status(201).json(task);
 });
@@ -49,6 +52,8 @@ tasksRouter.put('/:id', (req, res) => {
   const task = findTask(req.params.id);
   if (!task) return res.status(404).json({ error: 'Task not found' });
   Object.assign(task, req.body || {});
+  pushLog({ ts: Date.now(), level: 'INFO', message: `[TASK] updated ${task.id}` });
+  persistState();
   broadcast('tasks', { type: 'task.updated', task });
   res.json(task);
 });
@@ -57,6 +62,8 @@ tasksRouter.delete('/:id', (req, res) => {
   const i = state.tasks.findIndex(t => t.id === req.params.id);
   if (i < 0) return res.status(404).json({ error: 'Task not found' });
   state.tasks.splice(i, 1);
+  pushLog({ ts: Date.now(), level: 'WARN', message: `[TASK] deleted ${req.params.id}` });
+  persistState();
   broadcast('tasks', { type: 'task.deleted', id: req.params.id });
   res.json({ ok: true });
 });
@@ -67,6 +74,8 @@ tasksRouter.post('/:id/log', (req, res) => {
   const line = req.body?.log || req.body?.message || '';
   task.logs = task.logs || [];
   task.logs.push(line);
+  pushLog({ ts: Date.now(), level: 'INFO', message: `[TASK] ${task.id} ${line}` });
+  persistState();
   broadcast('tasks', { type: 'task.log', id: task.id, log: line });
   res.json({ ok: true });
 });
@@ -76,6 +85,8 @@ tasksRouter.post('/:id/cancel', (req, res) => {
   if (!task) return res.status(404).json({ error: 'Task not found' });
   task.status = 'failed';
   task.logs.push('WARN Task canceled');
+  pushLog({ ts: Date.now(), level: 'WARN', message: `[TASK] canceled ${task.id}` });
+  persistState();
   broadcast('tasks', { type: 'task.updated', task });
   res.json(task);
 });
@@ -86,6 +97,8 @@ tasksRouter.post('/:id/restart', (req, res) => {
   task.status = 'running';
   task.startedAt = Date.now();
   task.logs.push('INFO Task restarted');
+  pushLog({ ts: Date.now(), level: 'INFO', message: `[TASK] restarted ${task.id}` });
+  persistState();
   broadcast('tasks', { type: 'task.updated', task });
   res.json(task);
 });

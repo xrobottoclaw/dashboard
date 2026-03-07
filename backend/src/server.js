@@ -24,6 +24,8 @@ import { createLogsWss } from './websocket/logs.js';
 import { createTasksWss } from './websocket/tasks.js';
 import { createSystemWss } from './websocket/system.js';
 import { createTerminalWss } from './websocket/terminal.js';
+import { wsChannels } from './services/state.js';
+import { setLogPushHandler } from './services/logStore.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +57,12 @@ const wssMap = {
   '/ws/system': createSystemWss(),
   '/ws/terminal': createTerminalWss()
 };
+
+setLogPushHandler((entry) => {
+  for (const ws of wsChannels.logs) {
+    try { ws.send(JSON.stringify(entry)); } catch {}
+  }
+});
 
 server.on('upgrade', (request, socket, head) => {
   try {
