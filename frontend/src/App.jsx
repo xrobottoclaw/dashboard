@@ -32,6 +32,7 @@ function Overview(){
   if(!data) return 'Loading...';
   return <div className='space-y-4'>
     <div className='grid grid-cols-4 gap-3'>{Object.entries(data.stats).map(([k,v])=><div key={k} className='card'><div className='text-zinc-400'>{k}</div><div className='text-2xl'>{v}</div></div>)}</div>
+    <div className='grid grid-cols-3 gap-3'>{Object.entries(data.agentStats||{}).map(([k,v])=><div key={k} className='card'><div className='text-zinc-400'>agent {k}</div><div className='text-xl'>{v}</div></div>)}</div>
     <div className='card h-64'><ResponsiveContainer><LineChart data={series}><XAxis dataKey='t' hide/><YAxis/><Tooltip/><Line dataKey='cpu' stroke='#60a5fa'/><Line dataKey='ram' stroke='#34d399'/><Line dataKey='disk' stroke='#fbbf24'/></LineChart></ResponsiveContainer></div>
     <div className='card'><div>Agent uptime: {Math.floor(data.agent.uptimeSec)}s | version: {data.agent.version}</div></div>
     <div className='card'><div className='mb-2 text-zinc-300'>Control Timeline (son 5)</div>{timeline.length?timeline.map((l,i)=><div key={i} className='text-xs text-zinc-400'>{new Date(l.ts).toLocaleTimeString()} {l.message}</div>):<div className='text-xs text-zinc-500'>Henüz control eventi yok</div>}</div>
@@ -78,11 +79,11 @@ function Skills(){
 }
 
 function Logs(){
-  const [logs,setLogs]=useState([]); const [level,setLevel]=useState(''); const [keyword,setKeyword]=useState('');
-  useEffect(()=>{const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/logs'); ws.onmessage=e=>setLogs(s=>[...s.slice(-500),JSON.parse(e.data)]); return ()=>ws.close();},[]);
+  const [logs,setLogs]=useState([]); const [level,setLevel]=useState(''); const [keyword,setKeyword]=useState(''); const [connected,setConnected]=useState(false);
+  useEffect(()=>{api.get('/logs/export',{params:{format:'json'}}).then(r=>setLogs(r.data||[])).catch(()=>{}); const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/logs'); ws.onopen=()=>setConnected(true); ws.onclose=()=>setConnected(false); ws.onmessage=e=>setLogs(s=>[...s.slice(-500),JSON.parse(e.data)]); return ()=>ws.close();},[]);
   const filtered=useMemo(()=>logs.filter(l=>(!level||l.level===level)&&(!keyword||l.message.includes(keyword))),[logs,level,keyword]);
   const download=(format)=>window.open(`${import.meta.env.VITE_API_URL||'/api'}/logs/export?format=${format}${level?`&level=${level}`:''}${keyword?`&keyword=${encodeURIComponent(keyword)}`:''}`,'_blank');
-  return <div className='space-y-2'><div className='flex gap-2'><select className='bg-zinc-900 p-2 rounded' onChange={e=>setLevel(e.target.value)}><option value=''>all</option><option>INFO</option><option>WARN</option><option>ERROR</option><option>TOOL_CALL</option></select><input className='bg-zinc-900 p-2 rounded' placeholder='keyword' onChange={e=>setKeyword(e.target.value)}/><button className='bg-zinc-800 px-3 rounded' onClick={()=>download('txt')}>TXT indir</button><button className='bg-zinc-800 px-3 rounded' onClick={()=>download('json')}>JSON indir</button></div><div className='card h-96 overflow-auto font-mono text-sm'>{filtered.map((l,i)=><div key={i} className={colors[l.level]}>{new Date(l.ts).toLocaleTimeString()} {l.message}</div>)}</div></div>;
+  return <div className='space-y-2'><div className='flex gap-2 items-center'><select className='bg-zinc-900 p-2 rounded' onChange={e=>setLevel(e.target.value)}><option value=''>all</option><option>INFO</option><option>WARN</option><option>ERROR</option><option>TOOL_CALL</option></select><input className='bg-zinc-900 p-2 rounded' placeholder='keyword' onChange={e=>setKeyword(e.target.value)}/><button className='bg-zinc-800 px-3 rounded' onClick={()=>download('txt')}>TXT indir</button><button className='bg-zinc-800 px-3 rounded' onClick={()=>download('json')}>JSON indir</button><span className={`text-xs ${connected?'text-emerald-400':'text-amber-400'}`}>{connected?'WS bağlı':'WS bağlı değil'}</span></div><div className='card h-96 overflow-auto font-mono text-sm'>{filtered.map((l,i)=><div key={i} className={colors[l.level]}>{new Date(l.ts).toLocaleTimeString()} {l.message}</div>)}</div></div>;
 }
 
 function Files(){
