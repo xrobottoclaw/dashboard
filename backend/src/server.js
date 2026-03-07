@@ -3,6 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import http from 'http';
 import { authMiddleware } from './middleware/auth.js';
+import { apiKeyMiddleware } from './middleware/apiKey.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { authRouter } from './routes/auth.js';
 import { overviewRouter } from './routes/overview.js';
 import { tasksRouter } from './routes/tasks.js';
@@ -23,6 +26,7 @@ app.use(express.json({ limit: '2mb' }));
 
 app.get('/health', (_, res) => res.json({ ok: true, version: '1.0.0' }));
 app.use('/api/auth', authRouter);
+app.use('/api/control', apiKeyMiddleware, controlRouter);
 app.use('/api', authMiddleware);
 app.use('/api/overview', overviewRouter);
 app.use('/api/tasks', tasksRouter);
@@ -31,10 +35,18 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/openclaw', openclawProxyRouter);
 app.use('/api/logs', logsRouter);
-app.use('/api/control', controlRouter);
 
 setupLogWebSocket(server);
 setupTerminalWebSocket(server);
 
-const PORT = process.env.PORT || 4001;
-server.listen(PORT, () => console.log(`Backend running on :${PORT}`));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const staticDir = path.resolve(__dirname, '../../frontend-dist');
+app.use(express.static(staticDir));
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/ws')) return next();
+  res.sendFile(path.join(staticDir, 'index.html'));
+});
+
+const PORT = process.env.PORT || 3100;
+server.listen(PORT, '0.0.0.0', () => console.log(`Dashboard running on :${PORT}`));

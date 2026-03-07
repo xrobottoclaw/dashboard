@@ -1,29 +1,24 @@
 services:
-  dashboard-backend:
+  dashboard:
     build:
-      context: ../backend
+      context: ..
+      dockerfile: Dockerfile
+    container_name: openclaw-ops-dashboard
     restart: unless-stopped
     env_file:
       - ../.env
     environment:
-      - PORT=4001
+      - PORT=3100
       - WORKSPACE_ROOT=/workspace
+      - DASHBOARD_API_KEY=${DASHBOARD_API_KEY}
       - OPENCLAW_BASE_URL=${OPENCLAW_BASE_URL:-http://127.0.0.1:18789}
       - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
+      - DB_PATH=/data/dashboard.sqlite
     ports:
-      - "127.0.0.1:4001:4001"
+      - "${DASHBOARD_BIND_IP:-100.90.28.62}:3100:3100"
     volumes:
-      - /data/workspace:/workspace
+      - /data/workspace:/workspace:ro
+      - dashboard-data:/data
 
-  dashboard-frontend:
-    build:
-      context: ../frontend
-    restart: unless-stopped
-    depends_on:
-      - dashboard-backend
-    environment:
-      - VITE_API_URL=/api
-      - BACKEND_PROXY_TARGET=http://dashboard-backend:4001
-      - BACKEND_PROXY_WS_TARGET=ws://dashboard-backend:4001
-    ports:
-      - "${DASHBOARD_BIND_IP:-100.90.28.62}:5173:5173"
+volumes:
+  dashboard-data:

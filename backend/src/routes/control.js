@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { tasks } from '../services/store.js';
 import { pushLog } from '../services/logStore.js';
+import { recordEvent } from '../services/db.js';
 
 export const controlRouter = Router();
 
@@ -10,6 +11,7 @@ const audit = (type, payload = {}) => {
     level: 'TOOL_CALL',
     message: `[CONTROL] ${type} ${JSON.stringify(payload)}`
   });
+  recordEvent(type, payload);
 };
 
 controlRouter.post('/task', (req, res) => {

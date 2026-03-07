@@ -1,42 +1,37 @@
 # OpenClaw Yönetim Dashboard
 
-React (Vite) + Tailwind + Express + WebSocket tabanlı yönetim paneli.
+Operasyon odaklı dashboard: React + Express + WebSocket.
 
-## İçerik
-- JWT login
-- Overview (task stats, CPU/RAM/Disk)
-- Tasks (filtre + detay + cancel/restart)
-- Live Logs (WS + TXT/JSON export)
-- File Manager (list/read/write/mkdir/rename/delete/download)
-- Web Terminal (xterm.js)
-- Settings + Analytics
-- OpenClaw upstream proxy: `/api/openclaw/*`
-- Control API (operasyon otomasyonu): `/api/control/*`
+## Mimari (karar)
+- OpenClaw: mevcut container
+- Dashboard: **aynı VPS'te ayrı container**
+- Yayın: sadece Tailscale/private network
+- Tek container içinde API + UI aynı porttan servis edilir (**3100**)
 
----
+Detay: `docs/ARCHITECTURE.md`
 
-## Mimari Karar (Önerilen)
+## Özellik Başlıkları
+1. Overview
+2. Tasks
+3. Live Logs
+4. File Manager
+5. Agent Config
+6. API Keys & Security
+7. History/Analytics
 
-Bu repo için önerilen çalışma şekli:
-- OpenClaw kendi container'ında
-- Dashboard aynı VPS'te **ayrı container/service** olarak
-- Yayın sadece Tailscale/private network
-
-Detay karar dokümanı: `docs/ARCHITECTURE.md`
-
-## 1) GitHub’dan kurulum (önerilen)
-
+## Kurulum (GitHub)
 ```bash
 git clone git@github.com:xrobottoclaw/dashboard.git
-cd dashboard/openclaw-dashboard
+cd dashboard
 cp .env.example .env
 ```
 
-`.env` dosyasında en az şunları düzenleyin:
-- `DASHBOARD_BIND_IP=100.90.28.62` (veya kendi tailscale ip)
+`.env` düzenle:
+- `DASHBOARD_BIND_IP=100.90.28.62`
+- `DASHBOARD_API_KEY=...`
 - `OPENCLAW_BASE_URL=http://127.0.0.1:18789`
-- `OPENCLAW_GATEWAY_TOKEN=<TOKEN>`
-- `JWT_SECRET=<güçlü-secret>`
+- `OPENCLAW_GATEWAY_TOKEN=...`
+- `JWT_SECRET=...`
 
 Başlat:
 ```bash
@@ -46,62 +41,36 @@ docker compose up -d --build
 Kontrol:
 ```bash
 docker compose ps
-curl -s http://127.0.0.1:4001/health
-curl -I http://100.90.28.62:5173
+curl -s http://127.0.0.1:3100/health
+curl -I http://100.90.28.62:3100
 ```
 
 Aç:
-- `http://100.90.28.62:5173`
-- veya `http://claw.taila2b846.ts.net:5173`
+- `http://100.90.28.62:3100`
+- veya `http://claw.taila2b846.ts.net:3100`
 
----
-
-## 2) Docker yoksa (container içinde çalışma)
-
-Backend:
-```bash
-cd /data/workspace/openclaw-dashboard/backend
-npm install
-HOST=0.0.0.0 PORT=4001 OPENCLAW_BASE_URL=http://127.0.0.1:18789 OPENCLAW_GATEWAY_TOKEN=<TOKEN> npm start
-```
-
-Frontend (ayrı terminal):
-```bash
-cd /data/workspace/openclaw-dashboard/frontend
-npm install --include=dev
-BACKEND_PROXY_TARGET=http://127.0.0.1:4001 BACKEND_PROXY_WS_TARGET=ws://127.0.0.1:4001 npm run dev -- --host 0.0.0.0 --port 5173
-```
-
----
-
-## Güvenlik
-- Public domain yerine Tailscale/private network kullanın.
-- Token/secret değerlerini repoya commit etmeyin.
-- `backend` portu yalnızca localhost bind edilmiştir; dış erişim frontend üzerinden yapılır.
-
-## Control API (Telegram -> OpenClaw -> Dashboard)
-Örnekler:
+## Control API (OpenClaw -> Dashboard)
+Control API, JWT değil **X-API-Key** kullanır.
 
 ```bash
 # görev oluştur
-curl -X POST http://127.0.0.1:4001/api/control/task \
-  -H 'Authorization: Bearer <JWT>' \
+curl -X POST http://127.0.0.1:3100/api/control/task \
+  -H 'X-API-Key: <DASHBOARD_API_KEY>' \
   -H 'Content-Type: application/json' \
   -d '{"prompt":"X görevini yap","actor":"atlas"}'
 
 # göreve agent ata
-curl -X POST http://127.0.0.1:4001/api/control/task/<TASK_ID>/assign \
-  -H 'Authorization: Bearer <JWT>' \
+curl -X POST http://127.0.0.1:3100/api/control/task/<TASK_ID>/assign \
+  -H 'X-API-Key: <DASHBOARD_API_KEY>' \
   -H 'Content-Type: application/json' \
-  -d '{"assignee":"execution-agent"}'
+  -d '{"assignee":"frontend-developer"}'
 
 # heartbeat ayarı
-curl -X POST http://127.0.0.1:4001/api/control/heartbeat \
-  -H 'Authorization: Bearer <JWT>' \
+curl -X POST http://127.0.0.1:3100/api/control/heartbeat \
+  -H 'X-API-Key: <DASHBOARD_API_KEY>' \
   -H 'Content-Type: application/json' \
   -d '{"intervalMin":20,"enabled":true}'
 ```
 
-## Varsayılan giriş
-- kullanıcı: `admin`
-- şifre: `admin123`
+## Dashboard Skill
+OpenClaw için hazır skill şablonu: `dashboard-skill.md`
