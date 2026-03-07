@@ -1,10 +1,56 @@
 import { Router } from 'express';
 import { state, persistState } from '../services/state.js';
 import { pushLog } from '../services/logStore.js';
+import { ocGet } from '../services/openclaw.js';
 
 export const agentsRouter = Router();
 
-agentsRouter.get('/', (_, res) => res.json(state.agents));
+function normalizeUpstreamAgents(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((a, i) => ({
+    id: a.id || a.agentId || a.key || `up-${i}`,
+    name: a.name || a.label || a.agent || a.id || `agent-${i}`,
+    role: a.role || a.description || 'openclaw-agent',
+    status: a.status || (a.active ? 'running' : 'idle'),
+    source: 'openclaw'
+  }));
+}
+
+agentsRouter.get('/', async (_, res) => {
+  const candidates = await Promise.all([
+    ocGet('/api/agents', null),
+    ocGet('/agents', null),
+    ocGet('/api/sessions', null),
+    ocGet('/sessions', null)
+  ]);
+
+  let upstream = [];
+  for (const c of candidates) {
+    if (Array.isArray(c) && c.length) {
+      upstream = normalizeUpstreamAgents(c);
+      break;
+    }
+    if (c?.items && Array.isArray(c.items) && c.items.length) {
+      upstream = normalizeUpstreamAgents(c.items);
+      break;
+    }
+    if (c?.sessions && Array.isArray(c.sessions) && c.sessions.length) {
+      upstream = normalizeUpstreamAgents(c.sessions);
+      break;
+    }
+  }
+
+  const mergedMap = new Map();
+  [...upstream, ...state.agents].forEach((a) => mergedMap.set(a.id, a));
+  const merged = [...mergedMap.values()];
+
+  if (merged.length !== state.agents.length) {
+    state.agents = merged;
+    persistState();
+  }
+
+  res.json(merged);
+});
 agentsRouter.post('/', (req, res) => {
   const a = { id: `a-${Date.now()}`, status: 'idle', createdAt: Date.now(), ...req.body };
   state.agents.push(a);

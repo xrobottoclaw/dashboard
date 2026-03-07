@@ -1,10 +1,39 @@
 import { Router } from 'express';
 import { state, persistState } from '../services/state.js';
 import { pushLog } from '../services/logStore.js';
+import { ocGet } from '../services/openclaw.js';
 
 export const skillsRouter = Router();
 
-skillsRouter.get('/', (_, res) => res.json(state.skills));
+function normalizeUpstreamSkills(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((s, i) => ({
+    id: s.id || s.key || `sk-${i}`,
+    name: s.name || s.key || `skill-${i}`,
+    description: s.description || '',
+    source: 'openclaw'
+  }));
+}
+
+skillsRouter.get('/', async (_, res) => {
+  const candidates = await Promise.all([
+    ocGet('/api/skills', null),
+    ocGet('/skills', null)
+  ]);
+  let upstream = [];
+  for (const c of candidates) {
+    if (Array.isArray(c) && c.length) { upstream = normalizeUpstreamSkills(c); break; }
+    if (c?.items && Array.isArray(c.items) && c.items.length) { upstream = normalizeUpstreamSkills(c.items); break; }
+  }
+  const mergedMap = new Map();
+  [...upstream, ...state.skills].forEach((s) => mergedMap.set(s.id, s));
+  const merged = [...mergedMap.values()];
+  if (merged.length !== state.skills.length) {
+    state.skills = merged;
+    persistState();
+  }
+  res.json(merged);
+});
 skillsRouter.post('/', (req, res) => {
   const s = { id: `s-${Date.now()}`, createdAt: Date.now(), ...req.body };
   state.skills.push(s);
