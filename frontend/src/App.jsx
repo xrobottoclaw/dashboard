@@ -15,13 +15,13 @@ api.interceptors.request.use((config) => {
 const colors = { INFO: 'text-white', WARN: 'text-yellow-400', ERROR: 'text-red-400', TOOL_CALL: 'text-blue-400' };
 
 function Layout({ children }) {
-  const links = ['overview','tasks','logs','files','terminal','settings','history'];
+  const links = ['overview','tasks','agents','skills','logs','files','terminal','settings','history'];
   return <div className='min-h-screen flex'><aside className='w-52 border-r border-zinc-800 p-4 space-y-2'>{links.map(l=><NavLink key={l} to={`/${l}`} className='block capitalize text-zinc-300'>{l}</NavLink>)}</aside><main className='flex-1 p-6'>{children}</main></div>;
 }
 
 function Overview(){
   const [data,setData]=useState(null); const [series,setSeries]=useState([]);
-  useEffect(()=>{const t=setInterval(async()=>{const r=await api.get('/overview'); setData(r.data); setSeries(s=>[...s.slice(-59),{t:new Date().toLocaleTimeString(),...r.data.resources}]);},1000); return ()=>clearInterval(t)},[]);
+  useEffect(()=>{const load=async()=>{const r=await api.get('/overview'); setData(r.data)}; load(); const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/system'); ws.onmessage=(e)=>{const m=JSON.parse(e.data); setSeries(s=>[...s.slice(-59),{t:new Date(m.ts).toLocaleTimeString(),cpu:m.cpu,ram:m.ram,disk:m.disk}]);}; return ()=>ws.close();},[]);
   if(!data) return 'Loading...';
   return <div className='space-y-4'>
     <div className='grid grid-cols-4 gap-3'>{Object.entries(data.stats).map(([k,v])=><div key={k} className='card'><div className='text-zinc-400'>{k}</div><div className='text-2xl'>{v}</div></div>)}</div>
@@ -40,6 +40,25 @@ function Tasks(){
     <div className='card'><table className='w-full text-sm'><thead><tr><th>ID</th><th>Durum</th><th>Başlangıç</th><th>Süre</th><th>Çalıştıran</th><th/></tr></thead><tbody>{tasks.map(t=><tr key={t.id}><td>{t.id}</td><td>{t.status}</td><td>{new Date(t.startedAt).toLocaleString()}</td><td>{Math.floor((t.durationMs||0)/1000)}s</td><td>{t.actor}</td><td><button onClick={async()=>setDetail((await api.get(`/tasks/${t.id}`)).data)}>Detay</button> | <button onClick={()=>api.post(`/tasks/${t.id}/cancel`).then(load)}>İptal</button> | <button onClick={()=>api.post(`/tasks/${t.id}/restart`).then(load)}>Yeniden Başlat</button></td></tr>)}</tbody></table></div>
     <div className='flex gap-2'><input className='bg-zinc-900 p-2 rounded flex-1' placeholder='Yeni görev prompt' value={prompt} onChange={e=>setPrompt(e.target.value)}/><button className='bg-blue-600 px-3 rounded' onClick={()=>api.post('/tasks',{prompt}).then(()=>{setPrompt('');load();})}>Başlat</button></div>
     {detail && <div className='fixed inset-0 bg-black/60 flex items-center justify-center' onClick={()=>setDetail(null)}><div className='card w-[800px] max-h-[80vh] overflow-auto' onClick={(e)=>e.stopPropagation()}><div className='flex justify-between'><h3 className='text-lg'>{detail.id}</h3><button onClick={()=>setDetail(null)}>Kapat</button></div><div>Durum: {detail.status} | Token: {detail.tokens}</div><div className='mt-2'>Tools: {(detail.tools||[]).join(', ') || '-'}</div><pre className='mt-2 text-xs bg-zinc-950 p-2 rounded'>{(detail.logs||[]).join('\n')}</pre></div></div>}
+  </div>;
+}
+
+function Agents(){
+  const [agents,setAgents]=useState([]); const [name,setName]=useState(''); const [role,setRole]=useState('');
+  const load=async()=>setAgents((await api.get('/agents')).data); useEffect(()=>{load();},[]);
+  return <div className='space-y-3'>
+    <div className='flex gap-2'><input className='bg-zinc-900 p-2 rounded' placeholder='agent name' value={name} onChange={e=>setName(e.target.value)}/><input className='bg-zinc-900 p-2 rounded' placeholder='role' value={role} onChange={e=>setRole(e.target.value)}/><button className='bg-blue-600 px-3 rounded' onClick={()=>api.post('/agents',{name,role}).then(()=>{setName('');setRole('');load();})}>Ekle</button></div>
+    <div className='card'><table className='w-full text-sm'><thead><tr><th>ID</th><th>Ad</th><th>Rol</th><th>Durum</th><th/></tr></thead><tbody>{agents.map(a=><tr key={a.id}><td>{a.id}</td><td>{a.name}</td><td>{a.role}</td><td>{a.status||'idle'}</td><td><button onClick={()=>api.post(`/agents/${a.id}/start`).then(load)}>Start</button> | <button onClick={()=>api.post(`/agents/${a.id}/stop`).then(load)}>Stop</button> | <button onClick={()=>api.delete(`/agents/${a.id}`).then(load)}>Sil</button></td></tr>)}</tbody></table></div>
+  </div>;
+}
+
+function Skills(){
+  const [skills,setSkills]=useState([]); const [name,setName]=useState(''); const [description,setDescription]=useState(''); const [agentId,setAgentId]=useState('');
+  const load=async()=>setSkills((await api.get('/skills')).data); useEffect(()=>{load();},[]);
+  return <div className='space-y-3'>
+    <div className='flex gap-2'><input className='bg-zinc-900 p-2 rounded' placeholder='skill name' value={name} onChange={e=>setName(e.target.value)}/><input className='bg-zinc-900 p-2 rounded flex-1' placeholder='description' value={description} onChange={e=>setDescription(e.target.value)}/><button className='bg-blue-600 px-3 rounded' onClick={()=>api.post('/skills',{name,description}).then(()=>{setName('');setDescription('');load();})}>Ekle</button></div>
+    <div className='flex gap-2'><input className='bg-zinc-900 p-2 rounded' placeholder='agent id for assign' value={agentId} onChange={e=>setAgentId(e.target.value)}/></div>
+    <div className='card'><table className='w-full text-sm'><thead><tr><th>ID</th><th>Ad</th><th>Açıklama</th><th>Atanan Agent</th><th/></tr></thead><tbody>{skills.map(s=><tr key={s.id}><td>{s.id}</td><td>{s.name}</td><td>{s.description}</td><td>{s.assignedAgentId||'-'}</td><td><button onClick={()=>api.post(`/skills/${s.id}/assign`,{agentId}).then(load)}>Ata</button> | <button onClick={()=>api.delete(`/skills/${s.id}`).then(load)}>Sil</button></td></tr>)}</tbody></table></div>
   </div>;
 }
 
@@ -96,5 +115,5 @@ function Login({ onOk }){
 export default function App(){
   const [ok,setOk]=useState(!!localStorage.getItem('token'));
   if(!ok) return <Login onOk={()=>setOk(true)}/>;
-  return <Layout><Routes><Route path='/' element={<Overview/>}/><Route path='/overview' element={<Overview/>}/><Route path='/tasks' element={<Tasks/>}/><Route path='/logs' element={<Logs/>}/><Route path='/files' element={<Files/>}/><Route path='/terminal' element={<Term/>}/><Route path='/settings' element={<Settings/>}/><Route path='/history' element={<History/>}/></Routes></Layout>
+  return <Layout><Routes><Route path='/' element={<Overview/>}/><Route path='/overview' element={<Overview/>}/><Route path='/tasks' element={<Tasks/>}/><Route path='/agents' element={<Agents/>}/><Route path='/skills' element={<Skills/>}/><Route path='/logs' element={<Logs/>}/><Route path='/files' element={<Files/>}/><Route path='/terminal' element={<Term/>}/><Route path='/settings' element={<Settings/>}/><Route path='/history' element={<History/>}/></Routes></Layout>
 }
