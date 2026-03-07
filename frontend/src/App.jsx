@@ -20,23 +20,26 @@ function Layout({ children }) {
 }
 
 function Overview(){
-  const [data,setData]=useState(null); const [series,setSeries]=useState([]);
-  useEffect(()=>{const load=async()=>{const r=await api.get('/overview'); setData(r.data)}; load(); const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/system'); ws.onmessage=(e)=>{const m=JSON.parse(e.data); setSeries(s=>[...s.slice(-59),{t:new Date(m.ts).toLocaleTimeString(),cpu:m.cpu,ram:m.ram,disk:m.disk}]);}; return ()=>ws.close();},[]);
+  const [data,setData]=useState(null); const [series,setSeries]=useState([]); const [timeline,setTimeline]=useState([]);
+  useEffect(()=>{const load=async()=>{const r=await api.get('/overview'); setData(r.data); const logs=(await api.get('/logs/export',{params:{format:'json'}})).data||[]; setTimeline(logs.filter(l=>String(l.message||'').includes('[CONTROL]')).slice(-5).reverse());}; load(); const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/system'); ws.onmessage=(e)=>{const m=JSON.parse(e.data); setSeries(s=>[...s.slice(-59),{t:new Date(m.ts).toLocaleTimeString(),cpu:m.cpu,ram:m.ram,disk:m.disk}]);}; return ()=>ws.close();},[]);
   if(!data) return 'Loading...';
   return <div className='space-y-4'>
     <div className='grid grid-cols-4 gap-3'>{Object.entries(data.stats).map(([k,v])=><div key={k} className='card'><div className='text-zinc-400'>{k}</div><div className='text-2xl'>{v}</div></div>)}</div>
     <div className='card h-64'><ResponsiveContainer><LineChart data={series}><XAxis dataKey='t' hide/><YAxis/><Tooltip/><Line dataKey='cpu' stroke='#60a5fa'/><Line dataKey='ram' stroke='#34d399'/><Line dataKey='disk' stroke='#fbbf24'/></LineChart></ResponsiveContainer></div>
     <div className='card'><div>Agent uptime: {Math.floor(data.agent.uptimeSec)}s | version: {data.agent.version}</div></div>
+    <div className='card'><div className='mb-2 text-zinc-300'>Control Timeline (son 5)</div>{timeline.length?timeline.map((l,i)=><div key={i} className='text-xs text-zinc-400'>{new Date(l.ts).toLocaleTimeString()} {l.message}</div>):<div className='text-xs text-zinc-500'>Henüz control eventi yok</div>}</div>
   </div>;
 }
 
 function Tasks(){
   const [tasks,setTasks]=useState([]); const [q,setQ]=useState(''); const [status,setStatus]=useState(''); const [prompt,setPrompt]=useState('');
-  const [from,setFrom]=useState(''); const [to,setTo]=useState(''); const [detail,setDetail]=useState(null);
+  const [from,setFrom]=useState(''); const [to,setTo]=useState(''); const [detail,setDetail]=useState(null); const [lastEvent,setLastEvent]=useState('');
   const load=async()=>setTasks((await api.get('/tasks',{params:{q,status,from:from?new Date(from).getTime():undefined,to:to?new Date(to).getTime():undefined}})).data);
   useEffect(()=>{load()},[q,status,from,to]);
+  useEffect(()=>{const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/tasks'); ws.onmessage=(e)=>{const evt=JSON.parse(e.data); setLastEvent(evt.type||'task.event'); load();}; return ()=>ws.close();},[q,status,from,to]);
   return <div className='space-y-3'>
     <div className='flex gap-2 flex-wrap'><input className='bg-zinc-900 p-2 rounded' placeholder='Search' value={q} onChange={e=>setQ(e.target.value)}/><select className='bg-zinc-900 p-2 rounded' onChange={e=>setStatus(e.target.value)}><option value=''>all</option><option>running</option><option>queued</option><option>done</option><option>failed</option></select><input type='datetime-local' className='bg-zinc-900 p-2 rounded' value={from} onChange={e=>setFrom(e.target.value)}/><input type='datetime-local' className='bg-zinc-900 p-2 rounded' value={to} onChange={e=>setTo(e.target.value)}/></div>
+    {lastEvent && <div className='text-xs text-emerald-400'>Live: {lastEvent}</div>}
     <div className='card'><table className='w-full text-sm'><thead><tr><th>ID</th><th>Durum</th><th>Başlangıç</th><th>Süre</th><th>Çalıştıran</th><th/></tr></thead><tbody>{tasks.map(t=><tr key={t.id}><td>{t.id}</td><td>{t.status}</td><td>{new Date(t.startedAt).toLocaleString()}</td><td>{Math.floor((t.durationMs||0)/1000)}s</td><td>{t.actor}</td><td><button onClick={async()=>setDetail((await api.get(`/tasks/${t.id}`)).data)}>Detay</button> | <button onClick={()=>api.post(`/tasks/${t.id}/cancel`).then(load)}>İptal</button> | <button onClick={()=>api.post(`/tasks/${t.id}/restart`).then(load)}>Yeniden Başlat</button></td></tr>)}</tbody></table></div>
     <div className='flex gap-2'><input className='bg-zinc-900 p-2 rounded flex-1' placeholder='Yeni görev prompt' value={prompt} onChange={e=>setPrompt(e.target.value)}/><button className='bg-blue-600 px-3 rounded' onClick={()=>api.post('/tasks',{prompt}).then(()=>{setPrompt('');load();})}>Başlat</button></div>
     {detail && <div className='fixed inset-0 bg-black/60 flex items-center justify-center' onClick={()=>setDetail(null)}><div className='card w-[800px] max-h-[80vh] overflow-auto' onClick={(e)=>e.stopPropagation()}><div className='flex justify-between'><h3 className='text-lg'>{detail.id}</h3><button onClick={()=>setDetail(null)}>Kapat</button></div><div>Durum: {detail.status} | Token: {detail.tokens}</div><div className='mt-2'>Tools: {(detail.tools||[]).join(', ') || '-'}</div><pre className='mt-2 text-xs bg-zinc-950 p-2 rounded'>{(detail.logs||[]).join('\n')}</pre></div></div>}
@@ -53,11 +56,11 @@ function Agents(){
 }
 
 function Skills(){
-  const [skills,setSkills]=useState([]); const [name,setName]=useState(''); const [description,setDescription]=useState(''); const [agentId,setAgentId]=useState('');
-  const load=async()=>setSkills((await api.get('/skills')).data); useEffect(()=>{load();},[]);
+  const [skills,setSkills]=useState([]); const [agents,setAgents]=useState([]); const [name,setName]=useState(''); const [description,setDescription]=useState(''); const [agentId,setAgentId]=useState('');
+  const load=async()=>{setSkills((await api.get('/skills')).data); const a=(await api.get('/agents')).data; setAgents(a); if(!agentId && a[0]?.id) setAgentId(a[0].id);}; useEffect(()=>{load();},[]);
   return <div className='space-y-3'>
     <div className='flex gap-2'><input className='bg-zinc-900 p-2 rounded' placeholder='skill name' value={name} onChange={e=>setName(e.target.value)}/><input className='bg-zinc-900 p-2 rounded flex-1' placeholder='description' value={description} onChange={e=>setDescription(e.target.value)}/><button className='bg-blue-600 px-3 rounded' onClick={()=>api.post('/skills',{name,description}).then(()=>{setName('');setDescription('');load();})}>Ekle</button></div>
-    <div className='flex gap-2'><input className='bg-zinc-900 p-2 rounded' placeholder='agent id for assign' value={agentId} onChange={e=>setAgentId(e.target.value)}/></div>
+    <div className='flex gap-2 items-center'><span className='text-sm text-zinc-400'>Atama agent:</span><select className='bg-zinc-900 p-2 rounded' value={agentId} onChange={e=>setAgentId(e.target.value)}>{agents.map(a=><option key={a.id} value={a.id}>{a.name||a.id}</option>)}</select></div>
     <div className='card'><table className='w-full text-sm'><thead><tr><th>ID</th><th>Ad</th><th>Açıklama</th><th>Atanan Agent</th><th/></tr></thead><tbody>{skills.map(s=><tr key={s.id}><td>{s.id}</td><td>{s.name}</td><td>{s.description}</td><td>{s.assignedAgentId||'-'}</td><td><button onClick={()=>api.post(`/skills/${s.id}/assign`,{agentId}).then(load)}>Ata</button> | <button onClick={()=>api.delete(`/skills/${s.id}`).then(load)}>Sil</button></td></tr>)}</tbody></table></div>
   </div>;
 }
