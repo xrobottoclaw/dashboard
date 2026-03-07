@@ -9,6 +9,8 @@ RUN npm run build
 # Build backend deps
 FROM node:22-alpine AS backend-builder
 WORKDIR /app/backend
+# node-pty / better-sqlite3 native builds need toolchain
+RUN apk add --no-cache python3 make g++
 COPY backend/package*.json ./
 RUN npm ci --omit=dev
 COPY backend/ ./
