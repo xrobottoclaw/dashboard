@@ -14,9 +14,16 @@ api.interceptors.request.use((config) => {
 });
 const colors = { INFO: 'text-white', WARN: 'text-yellow-400', ERROR: 'text-red-400', TOOL_CALL: 'text-blue-400' };
 
+function Notifications(){
+  const [events,setEvents]=useState([]);
+  useEffect(()=>{const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/tasks'); ws.onmessage=(e)=>{const evt=JSON.parse(e.data); setEvents(s=>[{ts:Date.now(),text:evt.type||'task.event'},...s].slice(0,5));}; return ()=>ws.close();},[]);
+  if(!events.length) return null;
+  return <div className='fixed top-3 right-3 z-50 space-y-2'>{events.map((e,i)=><div key={i} className='bg-zinc-900/95 border border-zinc-700 px-3 py-2 rounded text-xs text-emerald-300'>{new Date(e.ts).toLocaleTimeString()} · {e.text}</div>)}</div>;
+}
+
 function Layout({ children }) {
   const links = ['overview','tasks','agents','skills','logs','files','terminal','settings','history'];
-  return <div className='min-h-screen flex'><aside className='w-52 border-r border-zinc-800 p-4 space-y-2'>{links.map(l=><NavLink key={l} to={`/${l}`} className='block capitalize text-zinc-300'>{l}</NavLink>)}</aside><main className='flex-1 p-6'>{children}</main></div>;
+  return <div className='min-h-screen flex'><Notifications/><aside className='w-52 border-r border-zinc-800 p-4 space-y-2'>{links.map(l=><NavLink key={l} to={`/${l}`} className='block capitalize text-zinc-300'>{l}</NavLink>)}</aside><main className='flex-1 p-6'>{children}</main></div>;
 }
 
 function Overview(){
@@ -111,7 +118,7 @@ function Settings(){
 
 function History(){
   const [a,setA]=useState(null); useEffect(()=>{api.get('/analytics').then(r=>setA(r.data))},[]); if(!a) return 'Loading';
-  return <div className='grid grid-cols-2 gap-3'><div className='card h-64'><ResponsiveContainer><BarChart data={a.dailyTasks}><XAxis dataKey='date'/><YAxis/><Tooltip/><Bar dataKey='count' fill='#60a5fa'/></BarChart></ResponsiveContainer></div><div className='card h-64'><ResponsiveContainer><PieChart><Pie data={a.toolUsage} dataKey='value' nameKey='name'>{a.toolUsage.map((_,i)=><Cell key={i} fill={['#60a5fa','#34d399','#f87171','#fbbf24'][i%4]}/> )}</Pie></PieChart></ResponsiveContainer></div><div className='card'>Average duration: {a.averageDurationSec.toFixed(1)}s</div><div className='card'>Token: {a.tokenUsage} | Cost: ${a.estimatedCost}</div></div>
+  return <div className='grid grid-cols-2 gap-3'><div className='card h-64'><ResponsiveContainer><BarChart data={a.dailyTasks}><XAxis dataKey='date'/><YAxis/><Tooltip/><Bar dataKey='count' fill='#60a5fa'/></BarChart></ResponsiveContainer></div><div className='card h-64'><ResponsiveContainer><PieChart><Pie data={a.toolUsage} dataKey='value' nameKey='name'>{a.toolUsage.map((_,i)=><Cell key={i} fill={['#60a5fa','#34d399','#f87171','#fbbf24'][i%4]}/> )}</Pie></PieChart></ResponsiveContainer></div><div className='card h-64'><ResponsiveContainer><BarChart data={a.agentUsage||[]}><XAxis dataKey='name'/><YAxis/><Tooltip/><Bar dataKey='value' fill='#34d399'/></BarChart></ResponsiveContainer></div><div className='card'>Average duration: {a.averageDurationSec.toFixed(1)}s<br/>Token: {a.tokenUsage} | Cost: ${a.estimatedCost}</div></div>
 }
 
 function Login({ onOk }){
