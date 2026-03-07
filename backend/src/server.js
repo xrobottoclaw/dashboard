@@ -20,10 +20,10 @@ import { analyticsRouter } from './routes/analytics.js';
 import { openclawProxyRouter } from './routes/openclawProxy.js';
 import { logsRouter } from './routes/logs.js';
 import { controlRouter } from './routes/control.js';
-import { setupLogWebSocket } from './websocket/logs.js';
-import { setupTasksWebSocket } from './websocket/tasks.js';
-import { setupSystemWebSocket } from './websocket/system.js';
-import { setupTerminalWebSocket } from './websocket/terminal.js';
+import { createLogsWss } from './websocket/logs.js';
+import { createTasksWss } from './websocket/tasks.js';
+import { createSystemWss } from './websocket/system.js';
+import { createTerminalWss } from './websocket/terminal.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -49,10 +49,30 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/openclaw', openclawProxyRouter);
 app.use('/api/logs', logsRouter);
 
-setupLogWebSocket(server);
-setupTasksWebSocket(server);
-setupSystemWebSocket(server);
-setupTerminalWebSocket(server);
+const wssMap = {
+  '/ws/logs': createLogsWss(),
+  '/ws/tasks': createTasksWss(),
+  '/ws/system': createSystemWss(),
+  '/ws/terminal': createTerminalWss()
+};
+
+server.on('upgrade', (request, socket, head) => {
+  try {
+    const pathname = new URL(request.url, 'http://localhost').pathname;
+    const wss = wssMap[pathname];
+    if (!wss) {
+      socket.write('HTTP/1.1 404 Not Found\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } catch {
+    socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+    socket.destroy();
+  }
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -23,7 +23,7 @@ function Notifications(){
 
 function Layout({ children }) {
   const links = ['overview','tasks','agents','skills','logs','files','terminal','settings','history'];
-  return <div className='min-h-screen flex'><Notifications/><aside className='w-52 border-r border-zinc-800 p-4 space-y-2'>{links.map(l=><NavLink key={l} to={`/${l}`} className='block capitalize text-zinc-300'>{l}</NavLink>)}</aside><main className='flex-1 p-6'>{children}</main></div>;
+  return <div className='min-h-screen flex bg-gradient-to-b from-zinc-950 to-black'><Notifications/><aside className='w-60 border-r border-zinc-800 p-4 space-y-2 bg-zinc-950/80'><div className='mb-4'><div className='text-red-400 font-semibold'>OpenClaw Ops</div><div className='text-xs text-zinc-500'>Mission Control Dashboard</div></div>{links.map(l=><NavLink key={l} to={`/${l}`} className={({isActive})=>`block capitalize rounded px-3 py-2 ${isActive?'bg-zinc-800 text-white':'text-zinc-300 hover:bg-zinc-900'}`}>{l}</NavLink>)}</aside><main className='flex-1 p-6'><div className='max-w-[1500px] mx-auto'>{children}</div></main></div>;
 }
 
 function Overview(){

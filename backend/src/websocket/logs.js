@@ -1,11 +1,11 @@
 import { WebSocketServer } from 'ws';
 import { pushLog, queryLogs } from '../services/logStore.js';
 
-export function setupLogWebSocket(server) {
-  const wss = new WebSocketServer({ server, path: '/ws/logs' });
+export function createLogsWss() {
+  const wss = new WebSocketServer({ noServer: true });
   const levels = ['INFO', 'WARN', 'ERROR', 'TOOL_CALL'];
 
-  wss.on('connection', ws => {
+  wss.on('connection', (ws) => {
     queryLogs().slice(-100).forEach((l) => ws.send(JSON.stringify(l)));
 
     const timer = setInterval(() => {
@@ -17,4 +17,6 @@ export function setupLogWebSocket(server) {
 
     ws.on('close', () => clearInterval(timer));
   });
+
+  return wss;
 }

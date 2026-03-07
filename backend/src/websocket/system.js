@@ -2,8 +2,8 @@ import { WebSocketServer } from 'ws';
 import si from 'systeminformation';
 import { wsChannels } from '../services/state.js';
 
-export function setupSystemWebSocket(server) {
-  const wss = new WebSocketServer({ server, path: '/ws/system' });
+export function createSystemWss() {
+  const wss = new WebSocketServer({ noServer: true });
 
   wss.on('connection', (ws) => {
     wsChannels.system.add(ws);
@@ -23,4 +23,6 @@ export function setupSystemWebSocket(server) {
       wsChannels.system.delete(ws);
     });
   });
+
+  return wss;
 }
