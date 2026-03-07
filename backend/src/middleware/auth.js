@@ -18,3 +18,12 @@ export function authMiddleware(req, res, next) {
     res.status(401).json({ error: 'Invalid token' });
   }
 }
+
+export function authOrApiKeyMiddleware(req, res, next) {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey && process.env.DASHBOARD_API_KEY && apiKey === process.env.DASHBOARD_API_KEY) {
+    req.user = { username: 'openclaw-api' };
+    return next();
+  }
+  return authMiddleware(req, res, next);
+}

@@ -11,6 +11,14 @@ const safePath = (p = '.') => {
   return abs;
 };
 
+filesRouter.get('/', async (req, res) => {
+  try {
+    const dir = safePath(req.query.path);
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    res.json(entries.map(e => ({ name: e.name, type: e.isDirectory() ? 'dir' : 'file' })));
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
 filesRouter.get('/list', async (req, res) => {
   try {
     const dir = safePath(req.query.path);
@@ -41,6 +49,21 @@ filesRouter.post('/rename', async (req, res) => {
 
 filesRouter.get('/download', async (req, res) => {
   try { return res.download(safePath(req.query.path)); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+filesRouter.get('/content', async (req, res) => {
+  try { res.send(await fs.readFile(safePath(req.query.path), 'utf8')); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+filesRouter.put('/content', async (req, res) => {
+  try { await fs.writeFile(safePath(req.query.path), req.body.content || ''); res.json({ ok: true }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+filesRouter.post('/mkdir-by-query', async (req, res) => {
+  try { await fs.mkdir(safePath(req.query.path), { recursive: true }); res.json({ ok: true }); }
   catch (e) { res.status(400).json({ error: e.message }); }
 });
 

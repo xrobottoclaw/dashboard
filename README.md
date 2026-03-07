@@ -49,28 +49,21 @@ Aç:
 - `http://100.90.28.62:3100`
 - veya `http://claw.taila2b846.ts.net:3100`
 
-## Control API (OpenClaw -> Dashboard)
-Control API, JWT değil **X-API-Key** kullanır.
+## API Tasarımı (OpenClaw + UI)
+Hem JWT hem `X-API-Key` ile çalışır (OpenClaw için API Key önerilir).
 
-```bash
-# görev oluştur
-curl -X POST http://127.0.0.1:3100/api/control/task \
-  -H 'X-API-Key: <DASHBOARD_API_KEY>' \
-  -H 'Content-Type: application/json' \
-  -d '{"prompt":"X görevini yap","actor":"atlas"}'
-
-# göreve agent ata
-curl -X POST http://127.0.0.1:3100/api/control/task/<TASK_ID>/assign \
-  -H 'X-API-Key: <DASHBOARD_API_KEY>' \
-  -H 'Content-Type: application/json' \
-  -d '{"assignee":"frontend-developer"}'
-
-# heartbeat ayarı
-curl -X POST http://127.0.0.1:3100/api/control/heartbeat \
-  -H 'X-API-Key: <DASHBOARD_API_KEY>' \
-  -H 'Content-Type: application/json' \
-  -d '{"intervalMin":20,"enabled":true}'
-```
+- `GET /api/health`
+- `GET /api/system/stats`
+- `GET/POST /api/tasks`, `GET/PUT/DELETE /api/tasks/:id`
+- `POST /api/tasks/:id/log`, `POST /api/tasks/:id/cancel`, `POST /api/tasks/:id/restart`
+- `GET/POST /api/agents`, `GET/PUT/DELETE /api/agents/:id`
+- `PUT /api/agents/:id/heartbeat`, `POST /api/agents/:id/start`, `POST /api/agents/:id/stop`
+- `GET/POST /api/skills`, `PUT/DELETE /api/skills/:id`, `POST /api/skills/:id/assign`
+- `GET /api/files`, `GET /api/files/content`, `PUT /api/files/content`, `POST /api/files/mkdir`, `DELETE /api/files`
+- `GET/PUT /api/config`, `GET/POST/DELETE /api/keys`
+- `GET /api/analytics/tasks`, `GET /api/analytics/costs`, `GET /api/analytics/agents`
+- `GET /api/logs`, `GET /api/logs/export`
+- `WS /ws/logs`, `WS /ws/tasks`, `WS /ws/system`
 
 ## Dashboard Skill
 OpenClaw için hazır skill şablonu: `dashboard-skill.md`
