@@ -11,8 +11,18 @@ React (Vite) + Tailwind + Express + WebSocket tabanlı yönetim paneli.
 - Web Terminal (xterm.js)
 - Settings + Analytics
 - OpenClaw upstream proxy: `/api/openclaw/*`
+- Control API (operasyon otomasyonu): `/api/control/*`
 
 ---
+
+## Mimari Karar (Önerilen)
+
+Bu repo için önerilen çalışma şekli:
+- OpenClaw kendi container'ında
+- Dashboard aynı VPS'te **ayrı container/service** olarak
+- Yayın sadece Tailscale/private network
+
+Detay karar dokümanı: `docs/ARCHITECTURE.md`
 
 ## 1) GitHub’dan kurulum (önerilen)
 
@@ -68,6 +78,29 @@ BACKEND_PROXY_TARGET=http://127.0.0.1:4001 BACKEND_PROXY_WS_TARGET=ws://127.0.0.
 - Public domain yerine Tailscale/private network kullanın.
 - Token/secret değerlerini repoya commit etmeyin.
 - `backend` portu yalnızca localhost bind edilmiştir; dış erişim frontend üzerinden yapılır.
+
+## Control API (Telegram -> OpenClaw -> Dashboard)
+Örnekler:
+
+```bash
+# görev oluştur
+curl -X POST http://127.0.0.1:4001/api/control/task \
+  -H 'Authorization: Bearer <JWT>' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"X görevini yap","actor":"atlas"}'
+
+# göreve agent ata
+curl -X POST http://127.0.0.1:4001/api/control/task/<TASK_ID>/assign \
+  -H 'Authorization: Bearer <JWT>' \
+  -H 'Content-Type: application/json' \
+  -d '{"assignee":"execution-agent"}'
+
+# heartbeat ayarı
+curl -X POST http://127.0.0.1:4001/api/control/heartbeat \
+  -H 'Authorization: Bearer <JWT>' \
+  -H 'Content-Type: application/json' \
+  -d '{"intervalMin":20,"enabled":true}'
+```
 
 ## Varsayılan giriş
 - kullanıcı: `admin`

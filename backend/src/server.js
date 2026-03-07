@@ -11,6 +11,7 @@ import { settingsRouter } from './routes/settings.js';
 import { analyticsRouter } from './routes/analytics.js';
 import { openclawProxyRouter } from './routes/openclawProxy.js';
 import { logsRouter } from './routes/logs.js';
+import { controlRouter } from './routes/control.js';
 import { setupLogWebSocket } from './websocket/logs.js';
 import { setupTerminalWebSocket } from './websocket/terminal.js';
 
@@ -30,6 +31,7 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/openclaw', openclawProxyRouter);
 app.use('/api/logs', logsRouter);
+app.use('/api/control', controlRouter);
 
 setupLogWebSocket(server);
 setupTerminalWebSocket(server);
