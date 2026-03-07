@@ -1,110 +1,74 @@
 # OpenClaw Yönetim Dashboard
 
-Modern web dashboard (React + Vite + Tailwind + Express + WebSocket) tek repo içinde.
+React (Vite) + Tailwind + Express + WebSocket tabanlı yönetim paneli.
 
-## Özellikler
-- JWT login (username/password `.env` tabanlı)
-- Overview: görev sayıları, uptime/version, CPU/RAM/Disk canlı grafik
-- Tasks: liste, filtre (status/tarih/arama), detay modal (log/tool/token), yeni görev, iptal/yeniden başlat
-- Live Logs: WebSocket log akışı + level/keyword filtre + TXT/JSON export
-- File Manager: workspace gezinme + içerik okuma/yazma + yeni dosya/klasör + rename + indirme + silme
-- Web Terminal: xterm.js + backend pty websocket
-- Settings: model/token/timeout benzeri ayarlar + restart endpoint
-- History/Analytics: günlük görev, tool kullanımı, token/cost özeti
+## İçerik
+- JWT login
+- Overview (task stats, CPU/RAM/Disk)
+- Tasks (filtre + detay + cancel/restart)
+- Live Logs (WS + TXT/JSON export)
+- File Manager (list/read/write/mkdir/rename/delete/download)
+- Web Terminal (xterm.js)
+- Settings + Analytics
+- OpenClaw upstream proxy: `/api/openclaw/*`
 
-## Kurulum (Docker)
+---
+
+## 1) GitHub’dan kurulum (önerilen)
+
 ```bash
-cd openclaw-dashboard
-docker compose up --build
+git clone git@github.com:xrobottoclaw/dashboard.git
+cd dashboard/openclaw-dashboard
+cp .env.example .env
 ```
 
-- Frontend: http://localhost:5173
-- Backend health: http://localhost:4001/health
+`.env` dosyasında en az şunları düzenleyin:
+- `DASHBOARD_BIND_IP=100.90.28.62` (veya kendi tailscale ip)
+- `OPENCLAW_BASE_URL=http://127.0.0.1:18789`
+- `OPENCLAW_GATEWAY_TOKEN=<TOKEN>`
+- `JWT_SECRET=<güçlü-secret>`
 
-## Tailscale Üzerinden Erişim (Public Kapalı)
-Bu proje OpenClaw container'ı içinde de çalıştırılabilir.
-
-### A) Docker ile (host'ta docker varsa)
+Başlat:
 ```bash
-cd openclaw-dashboard
-export DASHBOARD_BIND_IP=100.90.28.62
 docker compose up -d --build
 ```
 
-### B) Container içinde (docker yoksa)
+Kontrol:
 ```bash
-cd /data/workspace/openclaw-dashboard/backend
-cp .env.example .env
-# .env içine token ekle:
-# OPENCLAW_GATEWAY_TOKEN=...
-npm install
-HOST=0.0.0.0 PORT=4001 node src/server.js
+docker compose ps
+curl -s http://127.0.0.1:4001/health
+curl -I http://100.90.28.62:5173
 ```
 
-Yeni terminal:
-```bash
-cd /data/workspace/openclaw-dashboard/frontend
-npm install
-BACKEND_PROXY_TARGET=http://127.0.0.1:4001 \
-BACKEND_PROXY_WS_TARGET=ws://127.0.0.1:4001 \
-npm run dev -- --host 0.0.0.0 --port 5173
-```
-
-Sonra Tailscale içinden aç:
+Aç:
 - `http://100.90.28.62:5173`
 - veya `http://claw.taila2b846.ts.net:5173`
 
-Notlar:
-- `OPENCLAW_BASE_URL` private kalmalı (`http://127.0.0.1:18789` veya tailnet IP).
-- `OPENCLAW_GATEWAY_TOKEN` sadece `.env` içinde tutulmalı, repoya yazılmamalı.
+---
 
-Varsayılan giriş:
+## 2) Docker yoksa (container içinde çalışma)
+
+Backend:
+```bash
+cd /data/workspace/openclaw-dashboard/backend
+npm install
+HOST=0.0.0.0 PORT=4001 OPENCLAW_BASE_URL=http://127.0.0.1:18789 OPENCLAW_GATEWAY_TOKEN=<TOKEN> npm start
+```
+
+Frontend (ayrı terminal):
+```bash
+cd /data/workspace/openclaw-dashboard/frontend
+npm install --include=dev
+BACKEND_PROXY_TARGET=http://127.0.0.1:4001 BACKEND_PROXY_WS_TARGET=ws://127.0.0.1:4001 npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+---
+
+## Güvenlik
+- Public domain yerine Tailscale/private network kullanın.
+- Token/secret değerlerini repoya commit etmeyin.
+- `backend` portu yalnızca localhost bind edilmiştir; dış erişim frontend üzerinden yapılır.
+
+## Varsayılan giriş
 - kullanıcı: `admin`
 - şifre: `admin123`
-
-## Lokal Geliştirme
-### Backend
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Ortam Değişkenleri (Backend)
-- `DASHBOARD_USERNAME`
-- `DASHBOARD_PASSWORD` (plain veya bcrypt hash)
-- `JWT_SECRET`
-- `JWT_EXPIRES`
-- `WORKSPACE_ROOT`
-- `OPENCLAW_BASE_URL` (örn: `http://127.0.0.1:18789` veya `http://100.86.181.56:18789`)
-- `OPENCLAW_GATEWAY_TOKEN`
-
-## OpenClaw Proxy
-Dashboard backend, upstream OpenClaw'a şu route ile proxy geçer:
-- `/api/openclaw/*` -> `${OPENCLAW_BASE_URL}/*` (Authorization: Bearer `OPENCLAW_GATEWAY_TOKEN`)
-
-> Güvenlik politikası: Production'da public domain yerine yalnızca Tailscale/private ağ endpoint'i kullanın.
-
-## Modül Durumu / Öncelik
-1. ✅ Backend API iskelet + Auth
-2. ✅ Overview & Task List
-3. ✅ Live Logs (WebSocket)
-4. ✅ File Manager
-5. ✅ Terminal
-6. ✅ Settings & Analytics
-
-## Secure Context Notu (Önemli)
-OpenClaw Control UI ve bazı websocket akışları tarayıcıda **secure context** ister.
-- `http://<ip>:port` ile açıldığında `disconnected (1008): requires HTTPS or localhost` alabilirsiniz.
-- Üretimde `https://domain` üzerinden açın (örn. Traefik + TLS).
-- Frontend varsayılan olarak `/api` ve `wss/ws` için mevcut origin'i kullanacak şekilde ayarlandı.
-
-## Not
-Bu sürüm üretim başlangıç iskeletidir. OpenClaw REST/WS endpointleri farklıysa `backend/src/routes/*` içinde gerçek proxy entegrasyonu yapılmalıdır.

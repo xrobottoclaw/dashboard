@@ -1,19 +1,27 @@
 services:
   backend:
     build: ./backend
+    restart: unless-stopped
+    env_file:
+      - .env
     ports:
-      - "127.0.0.1:4001:4001"
+      - "127.0.0.1:${PORT:-4001}:4001"
     environment:
       - PORT=4001
-      - DASHBOARD_USERNAME=admin
-      - DASHBOARD_PASSWORD=admin123
-      - JWT_SECRET=super-secret
-      - WORKSPACE_ROOT=/workspace
+      - WORKSPACE_ROOT=${WORKSPACE_ROOT:-/workspace}
+      - DASHBOARD_USERNAME=${DASHBOARD_USERNAME:-admin}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-admin123}
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret}
+      - JWT_EXPIRES=${JWT_EXPIRES:-8h}
+      - OPENCLAW_BASE_URL=${OPENCLAW_BASE_URL:-http://127.0.0.1:18789}
+      - OPENCLAW_WS_URL=${OPENCLAW_WS_URL:-ws://127.0.0.1:18789}
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
     volumes:
       - ../:/workspace
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "${DASHBOARD_BIND_IP:-127.0.0.1}:5173:5173"
     environment:
