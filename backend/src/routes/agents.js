@@ -42,9 +42,13 @@ agentsRouter.get('/', async (_, res) => {
 
   const mergedMap = new Map();
   [...upstream, ...state.agents].forEach((a) => mergedMap.set(a.id, a));
-  const merged = [...mergedMap.values()];
+  let merged = [...mergedMap.values()];
 
-  if (merged.length !== state.agents.length) {
+  if (!merged.length) {
+    merged = [{ id: 'main', name: 'main', role: 'primary-agent', status: 'running', source: 'fallback' }];
+  }
+
+  if (JSON.stringify(merged) !== JSON.stringify(state.agents)) {
     state.agents = merged;
     persistState();
   }

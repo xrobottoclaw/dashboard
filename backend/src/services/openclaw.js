@@ -9,11 +9,15 @@ export const oc = axios.create({
   headers: token ? { Authorization: `Bearer ${token}` } : {}
 });
 
+export const ocState = { lastError: null, baseURL, tokenConfigured: !!token };
+
 export async function ocGet(path, fallback) {
   try {
     const { data } = await oc.get(path);
+    ocState.lastError = null;
     return data;
-  } catch {
+  } catch (e) {
+    ocState.lastError = `${path}: ${e?.response?.status || ''} ${e?.message || 'request failed'}`.trim();
     return fallback;
   }
 }
@@ -21,8 +25,10 @@ export async function ocGet(path, fallback) {
 export async function ocPost(path, body = {}, fallback = null) {
   try {
     const { data } = await oc.post(path, body);
+    ocState.lastError = null;
     return data;
-  } catch {
+  } catch (e) {
+    ocState.lastError = `${path}: ${e?.response?.status || ''} ${e?.message || 'request failed'}`.trim();
     return fallback;
   }
 }

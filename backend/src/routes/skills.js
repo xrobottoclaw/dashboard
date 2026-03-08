@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import fs from 'fs/promises';
+import path from 'path';
 import { state, persistState } from '../services/state.js';
 import { pushLog } from '../services/logStore.js';
 import { ocGet } from '../services/openclaw.js';
@@ -27,8 +29,20 @@ skillsRouter.get('/', async (_, res) => {
   }
   const mergedMap = new Map();
   [...upstream, ...state.skills].forEach((s) => mergedMap.set(s.id, s));
-  const merged = [...mergedMap.values()];
-  if (merged.length !== state.skills.length) {
+  let merged = [...mergedMap.values()];
+
+  if (!merged.length) {
+    try {
+      const root = process.env.WORKSPACE_ROOT || '/workspace';
+      const skillsDir = path.resolve(root, 'skills');
+      const dirs = await fs.readdir(skillsDir, { withFileTypes: true });
+      merged = dirs.filter(d => d.isDirectory()).map((d, i) => ({ id: `fs-${i}`, name: d.name, description: 'workspace skill', source: 'workspace' }));
+    } catch {
+      merged = [];
+    }
+  }
+
+  if (JSON.stringify(merged) !== JSON.stringify(state.skills)) {
     state.skills = merged;
     persistState();
   }
