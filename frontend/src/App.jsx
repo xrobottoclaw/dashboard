@@ -12,6 +12,13 @@ api.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+api.interceptors.response.use((r)=>r,(err)=>{
+  if (err?.response?.status === 401) {
+    localStorage.removeItem('token');
+    if (typeof window !== 'undefined') window.location.reload();
+  }
+  return Promise.reject(err);
+});
 const colors = { INFO: 'text-white', WARN: 'text-yellow-400', ERROR: 'text-red-400', TOOL_CALL: 'text-blue-400' };
 
 function Notifications(){

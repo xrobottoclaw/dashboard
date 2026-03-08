@@ -20,6 +20,15 @@ export function authMiddleware(req, res, next) {
 }
 
 export function authOrApiKeyMiddleware(req, res, next) {
+  // Read-only fallback for dashboard visibility (tailscale/private deployments)
+  if (
+    req.method === 'GET' &&
+    ['/agents', '/skills', '/overview', '/system/stats', '/analytics', '/logs/export'].some((p) => req.path === p || req.path.startsWith(`${p}/`))
+  ) {
+    req.user = { username: 'viewer' };
+    return next();
+  }
+
   const apiKey = req.headers['x-api-key'];
   if (apiKey && process.env.DASHBOARD_API_KEY && apiKey === process.env.DASHBOARD_API_KEY) {
     req.user = { username: 'openclaw-api' };
