@@ -22,7 +22,10 @@ services:
     ports:
       - "${DASHBOARD_BIND_IP:-100.90.28.62}:3100:3100"
     volumes:
-      - /data/workspace:/workspace:ro
+      - type: bind
+        source: /data/workspace
+        target: /workspace
+        read_only: ${DASHBOARD_WORKSPACE_READ_ONLY:-true}
       - dashboard-data:/data
 
 volumes:

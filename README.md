@@ -7,6 +7,7 @@ Operasyon odaklı dashboard: React + Express + WebSocket.
 - Dashboard: **aynı VPS'te ayrı container**
 - Yayın: sadece Tailscale/private network
 - Tek container içinde API + UI aynı porttan servis edilir (**3100**)
+- Workspace mount: varsayılan **read-only** (`DASHBOARD_WORKSPACE_READ_ONLY=true`)
 
 Detay: `docs/ARCHITECTURE.md`
 
@@ -84,6 +85,14 @@ Script:
 - `known_hosts` içine github.com ekler
 - private/public key'i env secret'tan restore eder
 - `ssh -T git@github.com` ile doğrular
+
+## Dashboard Skill + Ops Script politikası
+- **Skill**: operasyon kararları, görev dağıtımı, heartbeat/agent/skill süreç kuralı için
+- **Script**: deterministik altyapı işleri (init, deploy, backup, migrate) için
+
+Bu repoda:
+- Operasyon skill şablonu: `dashboard-skill.md`
+- Operasyon scriptleri: `scripts/` (örn. `init-github-ssh.sh`, `organize-projects.sh`)
 
 ## Dashboard Skill
 OpenClaw için hazır skill şablonu: `dashboard-skill.md`
