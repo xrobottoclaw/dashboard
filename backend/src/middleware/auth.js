@@ -23,7 +23,7 @@ export function authOrApiKeyMiddleware(req, res, next) {
   // Read-only fallback for dashboard visibility (tailscale/private deployments)
   if (
     req.method === 'GET' &&
-    ['/agents', '/skills', '/overview', '/system/stats', '/system/upstream', '/analytics', '/logs/export'].some((p) => req.path === p || req.path.startsWith(`${p}/`))
+    ['/agents', '/skills', '/overview', '/system/stats', '/system/upstream', '/system/upstream/probe', '/analytics', '/logs/export'].some((p) => req.path === p || req.path.startsWith(`${p}/`))
   ) {
     req.user = { username: 'viewer' };
     return next();

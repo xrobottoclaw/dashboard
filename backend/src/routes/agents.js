@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import fs from 'fs/promises';
+import path from 'path';
 import { state, persistState } from '../services/state.js';
 import { pushLog } from '../services/logStore.js';
 import { ocGet } from '../services/openclaw.js';
@@ -43,6 +45,23 @@ agentsRouter.get('/', async (_, res) => {
   const mergedMap = new Map();
   [...upstream, ...state.agents].forEach((a) => mergedMap.set(a.id, a));
   let merged = [...mergedMap.values()];
+
+  if (!merged.length) {
+    try {
+      const root = process.env.WORKSPACE_ROOT || '/workspace';
+      const agentsDir = path.resolve(root, 'agents');
+      const dirs = await fs.readdir(agentsDir, { withFileTypes: true });
+      merged = dirs.filter(d => d.isDirectory()).map((d, i) => ({
+        id: `fs-agent-${i}`,
+        name: d.name,
+        role: 'workspace-agent',
+        status: d.name === 'main' ? 'running' : 'idle',
+        source: 'workspace'
+      }));
+    } catch {
+      merged = [];
+    }
+  }
 
   if (!merged.length) {
     merged = [{ id: 'main', name: 'main', role: 'primary-agent', status: 'running', source: 'fallback' }];
