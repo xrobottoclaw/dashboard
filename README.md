@@ -69,10 +69,20 @@ Hem JWT hem `X-API-Key` ile çalışır (OpenClaw için API Key önerilir).
 Container restart sonrası SSH key erişimi dalgalanırsa:
 
 ```bash
+# Coolify secret önerisi (birini kullan)
+# GITHUB_SSH_PRIVATE_KEY=<raw private key>
+# veya
+# GITHUB_SSH_PRIVATE_KEY_B64=<base64 private key>
+# opsiyonel:
+# GITHUB_SSH_PUBLIC_KEY=<public key>
+
 ./scripts/init-github-ssh.sh
 ```
 
-Not: Script `id_ed25519.pub` ve `known_hosts` dosyalarını garanti eder; private key (`/root/.ssh/id_ed25519`) yoksa güvenli şekilde tekrar yüklenmesi gerekir.
+Script:
+- `known_hosts` içine github.com ekler
+- private/public key'i env secret'tan restore eder
+- `ssh -T git@github.com` ile doğrular
 
 ## Dashboard Skill
 OpenClaw için hazır skill şablonu: `dashboard-skill.md`

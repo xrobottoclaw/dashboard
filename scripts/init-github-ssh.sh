@@ -6,33 +6,46 @@ PRIV="$SSH_DIR/id_ed25519"
 PUB="$SSH_DIR/id_ed25519.pub"
 KNOWN="$SSH_DIR/known_hosts"
 
-# Public key provided by Emre
-PUB_CONTENT='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKNRbgnrWZAjRcJG+e7061x1R8JCqeCPnpVs5pdmhZF4 robottoclaw@gmail.com'
+DEFAULT_PUB='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfKuw1qBc+wII96aASakGgf8rAmy5z/yxdxmOUyatq5 robottoclaw@gmail.com'
 
 mkdir -p "$SSH_DIR"
 chmod 700 "$SSH_DIR"
 
-# Ensure known_hosts has github.com
+# known_hosts
 if ! grep -q 'github.com' "$KNOWN" 2>/dev/null; then
   ssh-keyscan github.com >> "$KNOWN" 2>/dev/null || true
 fi
 chmod 644 "$KNOWN" 2>/dev/null || true
 
-# Ensure public key exists (informational)
-if [ ! -f "$PUB" ]; then
-  printf '%s\n' "$PUB_CONTENT" > "$PUB"
-  chmod 644 "$PUB"
+# Private key restore (preferred from env secret)
+# - GITHUB_SSH_PRIVATE_KEY: raw multi-line private key
+# - GITHUB_SSH_PRIVATE_KEY_B64: base64 encoded private key
+if [ ! -f "$PRIV" ]; then
+  if [ -n "${GITHUB_SSH_PRIVATE_KEY_B64:-}" ]; then
+    printf '%s' "$GITHUB_SSH_PRIVATE_KEY_B64" | base64 -d > "$PRIV"
+  elif [ -n "${GITHUB_SSH_PRIVATE_KEY:-}" ]; then
+    printf '%s\n' "$GITHUB_SSH_PRIVATE_KEY" > "$PRIV"
+  fi
 fi
+
+# Public key restore
+if [ ! -f "$PUB" ]; then
+  if [ -n "${GITHUB_SSH_PUBLIC_KEY:-}" ]; then
+    printf '%s\n' "$GITHUB_SSH_PUBLIC_KEY" > "$PUB"
+  else
+    printf '%s\n' "$DEFAULT_PUB" > "$PUB"
+  fi
+fi
+
+chmod 600 "$PRIV" 2>/dev/null || true
+chmod 644 "$PUB" 2>/dev/null || true
 
 if [ ! -f "$PRIV" ]; then
   echo "[init-github-ssh] Missing $PRIV"
-  echo "Provide private key (id_ed25519) securely, then rerun."
+  echo "Set GITHUB_SSH_PRIVATE_KEY or GITHUB_SSH_PRIVATE_KEY_B64 and rerun."
   exit 1
 fi
 
-chmod 600 "$PRIV"
-
-# Quick auth test
 ssh -o StrictHostKeyChecking=accept-new -T git@github.com || true
 
 echo "[init-github-ssh] done"
