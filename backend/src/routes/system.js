@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import si from 'systeminformation';
 import { ocState, ocGet } from '../services/openclaw.js';
+import { getSyncState, syncFromUpstream } from '../services/sync.js';
 
 export const systemRouter = Router();
 
@@ -20,6 +21,15 @@ systemRouter.get('/upstream', async (_, res) => {
     tokenConfigured: ocState.tokenConfigured,
     lastError: ocState.lastError
   });
+});
+
+systemRouter.get('/sync-status', async (_, res) => {
+  res.json(getSyncState());
+});
+
+systemRouter.post('/sync-now', async (_, res) => {
+  await syncFromUpstream();
+  res.json(getSyncState());
 });
 
 systemRouter.get('/upstream/probe', async (_, res) => {

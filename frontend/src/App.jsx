@@ -34,14 +34,14 @@ function Layout({ children }) {
 }
 
 function Overview(){
-  const [data,setData]=useState(null); const [series,setSeries]=useState([]); const [timeline,setTimeline]=useState([]);
-  useEffect(()=>{const load=async()=>{const r=await api.get('/overview'); setData(r.data); const logs=(await api.get('/logs/export',{params:{format:'json'}})).data||[]; setTimeline(logs.filter(l=>String(l.message||'').includes('[CONTROL]')).slice(-5).reverse());}; load(); const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/system'); ws.onmessage=(e)=>{const m=JSON.parse(e.data); setSeries(s=>[...s.slice(-59),{t:new Date(m.ts).toLocaleTimeString(),cpu:m.cpu,ram:m.ram,disk:m.disk}]);}; return ()=>ws.close();},[]);
+  const [data,setData]=useState(null); const [series,setSeries]=useState([]); const [timeline,setTimeline]=useState([]); const [sync,setSync]=useState(null);
+  useEffect(()=>{const load=async()=>{const r=await api.get('/overview'); setData(r.data); const logs=(await api.get('/logs/export',{params:{format:'json'}})).data||[]; setTimeline(logs.filter(l=>String(l.message||'').includes('[CONTROL]')).slice(-5).reverse()); const s=await api.get('/system/sync-status'); setSync(s.data);}; load(); const wsBase=import.meta.env.VITE_WS_URL || `${window.location.protocol==='https:'?'wss':'ws'}://${window.location.host}`; const ws=new WebSocket(wsBase+'/ws/system'); ws.onmessage=(e)=>{const m=JSON.parse(e.data); setSeries(s=>[...s.slice(-59),{t:new Date(m.ts).toLocaleTimeString(),cpu:m.cpu,ram:m.ram,disk:m.disk}]);}; return ()=>ws.close();},[]);
   if(!data) return 'Loading...';
   return <div className='space-y-4'>
     <div className='grid grid-cols-4 gap-3'>{Object.entries(data.stats).map(([k,v])=><div key={k} className='card'><div className='text-zinc-400'>{k}</div><div className='text-2xl'>{v}</div></div>)}</div>
     <div className='grid grid-cols-3 gap-3'>{Object.entries(data.agentStats||{}).map(([k,v])=><div key={k} className='card'><div className='text-zinc-400'>agent {k}</div><div className='text-xl'>{v}</div></div>)}</div>
     <div className='card h-64'><ResponsiveContainer><LineChart data={series}><XAxis dataKey='t' hide/><YAxis/><Tooltip/><Line dataKey='cpu' stroke='#60a5fa'/><Line dataKey='ram' stroke='#34d399'/><Line dataKey='disk' stroke='#fbbf24'/></LineChart></ResponsiveContainer></div>
-    <div className='card'><div>Agent uptime: {Math.floor(data.agent.uptimeSec)}s | version: {data.agent.version}</div></div>
+    <div className='card'><div>Agent uptime: {Math.floor(data.agent.uptimeSec)}s | version: {data.agent.version}</div><div className='text-xs text-zinc-400 mt-1'>Sync: {sync?.lastOkAt?new Date(sync.lastOkAt).toLocaleTimeString():'-'} | src agents:{sync?.sourceCounts?.agents??0} skills:{sync?.sourceCounts?.skills??0} tasks:{sync?.sourceCounts?.tasks??0}</div><div className='text-xs text-amber-400'>{sync?.lastError||''}</div><button className='mt-2 bg-zinc-800 px-2 py-1 rounded text-xs' onClick={async()=>{await api.post('/system/sync-now'); const s=await api.get('/system/sync-status'); setSync(s.data);}}>Sync now</button></div>
     <div className='card'><div className='mb-2 text-zinc-300'>Control Timeline (son 5)</div>{timeline.length?timeline.map((l,i)=><div key={i} className='text-xs text-zinc-400'>{new Date(l.ts).toLocaleTimeString()} {l.message}</div>):<div className='text-xs text-zinc-500'>Henüz control eventi yok</div>}</div>
   </div>;
 }

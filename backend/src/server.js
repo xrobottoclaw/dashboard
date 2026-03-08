@@ -26,6 +26,7 @@ import { createSystemWss } from './websocket/system.js';
 import { createTerminalWss } from './websocket/terminal.js';
 import { wsChannels } from './services/state.js';
 import { setLogPushHandler } from './services/logStore.js';
+import { startSyncLoop } from './services/sync.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -92,4 +93,7 @@ app.get('*', (req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3100;
-server.listen(PORT, '0.0.0.0', () => console.log(`Dashboard running on :${PORT}`));
+server.listen(PORT, '0.0.0.0', () => {
+  startSyncLoop();
+  console.log(`Dashboard running on :${PORT}`);
+});
