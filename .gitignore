@@ -17,3 +17,6 @@ coverage/
 # OS / misc
 .DS_Store
 *.log
+
+# Local workspace organization (not part of repo)
+projects/
