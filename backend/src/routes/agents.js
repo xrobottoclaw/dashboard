@@ -18,7 +18,15 @@ function normalizeUpstreamAgents(raw) {
   }));
 }
 
+function tryParseJsonString(payload) {
+  if (typeof payload !== 'string') return payload;
+  const t = payload.trim();
+  if (!(t.startsWith('{') || t.startsWith('['))) return payload;
+  try { return JSON.parse(t); } catch { return payload; }
+}
+
 function extractAgentArrays(payload) {
+  payload = tryParseJsonString(payload);
   if (!payload) return [];
   if (Array.isArray(payload)) return [payload];
   const out = [];
@@ -74,8 +82,9 @@ agentsRouter.get('/', async (_, res) => {
     }
   }
 
-  if (!merged.length) {
-    merged = [{ id: 'main', name: 'main', role: 'primary-agent', status: 'running', source: 'fallback' }];
+  const hasMain = merged.some((a) => a.name === 'main' || a.id === 'main');
+  if (!hasMain) {
+    merged.unshift({ id: 'main', name: 'main', role: 'primary-agent', status: 'running', source: 'fallback' });
   }
 
   if (JSON.stringify(merged) !== JSON.stringify(state.agents)) {

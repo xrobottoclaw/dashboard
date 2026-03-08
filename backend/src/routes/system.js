@@ -30,6 +30,22 @@ systemRouter.get('/upstream/probe', async (_, res) => {
     if (Array.isArray(data)) result[ep] = { kind: 'array', count: data.length };
     else if (data?.items && Array.isArray(data.items)) result[ep] = { kind: 'items', count: data.items.length };
     else if (data?.sessions && Array.isArray(data.sessions)) result[ep] = { kind: 'sessions', count: data.sessions.length };
+    else if (typeof data === 'string') {
+      const t = data.trim();
+      if (t.startsWith('{') || t.startsWith('[')) {
+        try {
+          const j = JSON.parse(t);
+          if (Array.isArray(j)) result[ep] = { kind: 'json-string-array', count: j.length };
+          else if (j?.items && Array.isArray(j.items)) result[ep] = { kind: 'json-string-items', count: j.items.length };
+          else if (j?.sessions && Array.isArray(j.sessions)) result[ep] = { kind: 'json-string-sessions', count: j.sessions.length };
+          else result[ep] = { kind: 'json-string-object' };
+        } catch {
+          result[ep] = { kind: 'string', sample: t.slice(0, 50) };
+        }
+      } else {
+        result[ep] = { kind: 'string', sample: t.slice(0, 50) };
+      }
+    }
     else if (data === null) result[ep] = { kind: 'null' };
     else result[ep] = { kind: typeof data };
   }

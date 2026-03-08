@@ -17,7 +17,15 @@ function normalizeUpstreamSkills(raw) {
   }));
 }
 
+function tryParseJsonString(payload) {
+  if (typeof payload !== 'string') return payload;
+  const t = payload.trim();
+  if (!(t.startsWith('{') || t.startsWith('['))) return payload;
+  try { return JSON.parse(t); } catch { return payload; }
+}
+
 function extractSkillArrays(payload) {
+  payload = tryParseJsonString(payload);
   if (!payload) return [];
   if (Array.isArray(payload)) return [payload];
   const out = [];
