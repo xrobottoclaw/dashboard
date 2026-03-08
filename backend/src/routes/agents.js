@@ -10,12 +10,25 @@ export const agentsRouter = Router();
 function normalizeUpstreamAgents(raw) {
   if (!Array.isArray(raw)) return [];
   return raw.map((a, i) => ({
-    id: a.id || a.agentId || a.key || `up-${i}`,
-    name: a.name || a.label || a.agent || a.id || `agent-${i}`,
-    role: a.role || a.description || 'openclaw-agent',
+    id: a.id || a.agentId || a.key || a.slug || `up-${i}`,
+    name: a.name || a.label || a.agent || a.slug || a.id || `agent-${i}`,
+    role: a.role || a.description || a.prompt || 'openclaw-agent',
     status: a.status || (a.active ? 'running' : 'idle'),
     source: 'openclaw'
   }));
+}
+
+function extractAgentArrays(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return [payload];
+  const out = [];
+  const keys = ['items', 'sessions', 'agents', 'data', 'rows'];
+  for (const k of keys) {
+    if (Array.isArray(payload[k])) out.push(payload[k]);
+  }
+  if (payload.config?.agents && Array.isArray(payload.config.agents)) out.push(payload.config.agents);
+  if (payload.defaults?.agents && Array.isArray(payload.defaults.agents)) out.push(payload.defaults.agents);
+  return out;
 }
 
 agentsRouter.get('/', async (_, res) => {
@@ -23,21 +36,19 @@ agentsRouter.get('/', async (_, res) => {
     ocGet('/api/agents', null),
     ocGet('/agents', null),
     ocGet('/api/sessions', null),
-    ocGet('/sessions', null)
+    ocGet('/sessions', null),
+    ocGet('/api/config', null),
+    ocGet('/config', null),
+    ocGet('/api/status', null),
+    ocGet('/status', null)
   ]);
 
   let upstream = [];
   for (const c of candidates) {
-    if (Array.isArray(c) && c.length) {
-      upstream = normalizeUpstreamAgents(c);
-      break;
-    }
-    if (c?.items && Array.isArray(c.items) && c.items.length) {
-      upstream = normalizeUpstreamAgents(c.items);
-      break;
-    }
-    if (c?.sessions && Array.isArray(c.sessions) && c.sessions.length) {
-      upstream = normalizeUpstreamAgents(c.sessions);
+    const arrays = extractAgentArrays(c);
+    const firstNonEmpty = arrays.find((arr) => Array.isArray(arr) && arr.length);
+    if (firstNonEmpty) {
+      upstream = normalizeUpstreamAgents(firstNonEmpty);
       break;
     }
   }

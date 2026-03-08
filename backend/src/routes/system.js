@@ -23,7 +23,7 @@ systemRouter.get('/upstream', async (_, res) => {
 });
 
 systemRouter.get('/upstream/probe', async (_, res) => {
-  const endpoints = ['/api/agents','/agents','/api/sessions','/sessions','/api/skills','/skills'];
+  const endpoints = ['/api/agents','/agents','/api/sessions','/sessions','/api/skills','/skills','/api/config','/config','/api/status','/status'];
   const result = {};
   for (const ep of endpoints) {
     const data = await ocGet(ep, null);

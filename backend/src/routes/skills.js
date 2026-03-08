@@ -10,22 +10,37 @@ export const skillsRouter = Router();
 function normalizeUpstreamSkills(raw) {
   if (!Array.isArray(raw)) return [];
   return raw.map((s, i) => ({
-    id: s.id || s.key || `sk-${i}`,
-    name: s.name || s.key || `skill-${i}`,
-    description: s.description || '',
+    id: s.id || s.key || s.slug || `sk-${i}`,
+    name: s.name || s.key || s.slug || `skill-${i}`,
+    description: s.description || s.prompt || '',
     source: 'openclaw'
   }));
+}
+
+function extractSkillArrays(payload) {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return [payload];
+  const out = [];
+  const keys = ['items', 'skills', 'data', 'rows'];
+  for (const k of keys) {
+    if (Array.isArray(payload[k])) out.push(payload[k]);
+  }
+  if (payload.config?.skills && Array.isArray(payload.config.skills)) out.push(payload.config.skills);
+  return out;
 }
 
 skillsRouter.get('/', async (_, res) => {
   const candidates = await Promise.all([
     ocGet('/api/skills', null),
-    ocGet('/skills', null)
+    ocGet('/skills', null),
+    ocGet('/api/config', null),
+    ocGet('/config', null)
   ]);
   let upstream = [];
   for (const c of candidates) {
-    if (Array.isArray(c) && c.length) { upstream = normalizeUpstreamSkills(c); break; }
-    if (c?.items && Array.isArray(c.items) && c.items.length) { upstream = normalizeUpstreamSkills(c.items); break; }
+    const arrays = extractSkillArrays(c);
+    const firstNonEmpty = arrays.find((arr) => Array.isArray(arr) && arr.length);
+    if (firstNonEmpty) { upstream = normalizeUpstreamSkills(firstNonEmpty); break; }
   }
   const mergedMap = new Map();
   [...upstream, ...state.skills].forEach((s) => mergedMap.set(s.id, s));
