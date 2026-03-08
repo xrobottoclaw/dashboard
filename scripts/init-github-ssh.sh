@@ -6,8 +6,6 @@ PRIV="$SSH_DIR/id_ed25519"
 PUB="$SSH_DIR/id_ed25519.pub"
 KNOWN="$SSH_DIR/known_hosts"
 
-DEFAULT_PUB='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfKuw1qBc+wII96aASakGgf8rAmy5z/yxdxmOUyatq5 robottoclaw@gmail.com'
-
 mkdir -p "$SSH_DIR"
 chmod 700 "$SSH_DIR"
 
@@ -17,7 +15,7 @@ if ! grep -q 'github.com' "$KNOWN" 2>/dev/null; then
 fi
 chmod 644 "$KNOWN" 2>/dev/null || true
 
-# Private key restore (preferred from env secret)
+# Private key restore (from env secret)
 # - GITHUB_SSH_PRIVATE_KEY: raw multi-line private key
 # - GITHUB_SSH_PRIVATE_KEY_B64: base64 encoded private key
 if [ ! -f "$PRIV" ]; then
@@ -28,13 +26,9 @@ if [ ! -f "$PRIV" ]; then
   fi
 fi
 
-# Public key restore
-if [ ! -f "$PUB" ]; then
-  if [ -n "${GITHUB_SSH_PUBLIC_KEY:-}" ]; then
-    printf '%s\n' "$GITHUB_SSH_PUBLIC_KEY" > "$PUB"
-  else
-    printf '%s\n' "$DEFAULT_PUB" > "$PUB"
-  fi
+# Public key restore (optional)
+if [ ! -f "$PUB" ] && [ -n "${GITHUB_SSH_PUBLIC_KEY:-}" ]; then
+  printf '%s\n' "$GITHUB_SSH_PUBLIC_KEY" > "$PUB"
 fi
 
 chmod 600 "$PRIV" 2>/dev/null || true

@@ -75,6 +75,7 @@ Container restart sonrası SSH key erişimi dalgalanırsa:
 # GITHUB_SSH_PRIVATE_KEY_B64=<base64 private key>
 # opsiyonel:
 # GITHUB_SSH_PUBLIC_KEY=<public key>
+# (anahtarları repoya asla yazma)
 
 ./scripts/init-github-ssh.sh
 ```
