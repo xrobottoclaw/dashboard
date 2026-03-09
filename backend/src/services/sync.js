@@ -6,7 +6,9 @@ const syncState = {
   lastRunAt: null,
   lastOkAt: null,
   lastError: null,
-  sourceCounts: { agents: 0, skills: 0, tasks: 0 }
+  sourceCounts: { agents: 0, skills: 0, tasks: 0 },
+  effectiveCounts: { agents: 0, skills: 0, tasks: 0 },
+  upstreamRawKinds: {}
 };
 
 function tryParse(v) {
@@ -23,6 +25,18 @@ function firstArray(payload, keys = []) {
     if (Array.isArray(payload?.[k])) return payload[k];
   }
   return [];
+}
+
+function kindOfPayload(v) {
+  const p = tryParse(v);
+  if (Array.isArray(p)) return `array:${p.length}`;
+  if (p && typeof p === 'object') {
+    for (const k of ['items','agents','skills','tasks','sessions']) {
+      if (Array.isArray(p[k])) return `${k}:${p[k].length}`;
+    }
+    return 'object';
+  }
+  return typeof p;
 }
 
 function normalizeAgents(arr) {
@@ -76,6 +90,15 @@ export async function syncFromUpstream() {
       ocGet('/api/tasks', null), ocGet('/tasks', null)
     ]);
 
+    syncState.upstreamRawKinds = {
+      '/api/agents': kindOfPayload(a1),
+      '/agents': kindOfPayload(a2),
+      '/api/skills': kindOfPayload(s1),
+      '/skills': kindOfPayload(s2),
+      '/api/tasks': kindOfPayload(t1),
+      '/tasks': kindOfPayload(t2)
+    };
+
     const upAgents = normalizeAgents(firstArray(a1, ['items', 'agents', 'sessions']).length ? firstArray(a1, ['items', 'agents', 'sessions']) : firstArray(a2, ['items', 'agents', 'sessions']));
     const upSkills = normalizeSkills(firstArray(s1, ['items', 'skills']).length ? firstArray(s1, ['items', 'skills']) : firstArray(s2, ['items', 'skills']));
     const upTasks = normalizeTasks(firstArray(t1, ['items', 'tasks']).length ? firstArray(t1, ['items', 'tasks']) : firstArray(t2, ['items', 'tasks']));
@@ -85,6 +108,7 @@ export async function syncFromUpstream() {
     if (upTasks.length) state.tasks = mergeById(state.tasks, upTasks);
 
     syncState.sourceCounts = { agents: upAgents.length, skills: upSkills.length, tasks: upTasks.length };
+    syncState.effectiveCounts = { agents: state.agents.length, skills: state.skills.length, tasks: state.tasks.length };
     syncState.lastOkAt = Date.now();
     syncState.lastError = null;
     persistState();
